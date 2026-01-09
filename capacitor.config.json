@@ -1,0 +1,16 @@
+
+{
+  "appId": "com.pawpal.actual",
+  "appName": "PawPal Actual",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "allowNavigation": ["*"]
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}
