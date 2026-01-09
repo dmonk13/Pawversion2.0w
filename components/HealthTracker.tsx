@@ -13,32 +13,24 @@ import {
   AlertCircle, 
   ChevronLeft, 
   ChevronRight, 
-  Search, 
-  ArrowRight, 
-  ExternalLink, 
   RefreshCw, 
   Star, 
-  Clock, 
   X, 
-  Calendar, 
   Activity, 
   Syringe, 
   Pill, 
-  StickyNote, 
-  ChevronDown, 
   History, 
-  TrendingUp, 
   Plus, 
   Upload, 
   File, 
-  Shield, 
   Zap, 
   Info, 
   Phone, 
-  Filter, 
   SlidersHorizontal, 
-  Map as MapIcon, 
-  Check 
+  Check,
+  ArrowRight,
+  Shield,
+  ExternalLink
 } from 'lucide-react';
 
 interface Props {
@@ -57,17 +49,6 @@ interface VetInfo {
   phone?: string;
   isOpen?: boolean;
 }
-
-const getApiKey = () => {
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-      return process.env.API_KEY;
-    }
-  } catch (e) {
-    console.warn("Environment variable access failed", e);
-  }
-  return '';
-};
 
 const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   const [view, setView] = useState<'tracker' | 'vets' | 'history'>('tracker');
@@ -188,7 +169,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     setLocationError(null);
 
     try {
-      const apiKey = getApiKey();
+      const apiKey = process.env.API_KEY;
       if (!apiKey) throw new Error("API Key not found. Please check configuration.");
 
       const ai = new GoogleGenAI({ apiKey });
