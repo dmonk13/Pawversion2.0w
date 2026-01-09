@@ -170,6 +170,9 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   };
 
   const fetchVets = async (specialty: string, forceRefresh = false) => {
+    // FIX: If we are currently finding the location, WAIT. Do not fall back to mocks yet.
+    if (!location && isLocating) return;
+
     setActiveSpecialty(specialty);
 
     // Use Cache if available and not forced
@@ -187,8 +190,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       // Safe check for API Key
       const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
       
-      // Fallback: Use mock data if API key or location is missing
-      if (!apiKey || !location) {
+      // Fallback: Use mock data ONLY if API key is missing OR (Location is missing AND we are done locating)
+      if (!apiKey || (!location && !isLocating)) {
           console.warn("API Key or Location missing. Using mock data.");
           // Simulate network delay for realism
           await new Promise(resolve => setTimeout(resolve, 800));
@@ -211,7 +214,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         contents: prompt,
         config: {
           tools: [{ googleMaps: {} }],
-          toolConfig: { retrievalConfig: { latLng: { latitude: location.lat, longitude: location.lng } } }
+          toolConfig: { retrievalConfig: { latLng: { latitude: location!.lat, longitude: location!.lng } } }
         }
       });
       
@@ -276,12 +279,22 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   };
 
   useEffect(() => {
-    if (view === 'vets' && vetList.length === 0 && !isLoadingVets) {
-      // Small delay to ensure render is complete
-      const timer = setTimeout(() => fetchVets('General'), 100);
-      return () => clearTimeout(timer);
+    if (view === 'vets' && !isLoadingVets) {
+      // Heuristic: Check if we currently have Mock Data loaded
+      const isMockData = vetList.length > 0 && vetList[0].name === "City Paws Clinic";
+      
+      if (location) {
+         // We have location now. If we have no data, OR we have mock data, fetch real data.
+         if (vetList.length === 0 || isMockData) {
+             fetchVets(activeSpecialty, true); // Force refresh to get real data
+         }
+      } else if (!isLocating && vetList.length === 0) {
+         // Location failed and we have no data, fetch (will trigger mock fallback)
+         fetchVets(activeSpecialty);
+      }
+      // If !location && isLocating, do nothing (wait).
     }
-  }, [view, location]);
+  }, [view, location, isLocating]); // Re-run when location status changes
 
   const sortedVets = useMemo(() => {
       let sorted = [...vetList];
