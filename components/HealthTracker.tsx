@@ -71,6 +71,245 @@ const MOCK_VETS: Record<string, VetInfo[]> = {
   ]
 };
 
+const HealthSuggestions = ({ pets }: { pets: Pet[] }) => {
+  const [tip, setTip] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const getTip = async () => {
+    if (pets.length === 0) return;
+    setLoading(true);
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const prompt = `Generate a short, single-sentence health tip for these pets: ${pets.map(p => `${p.name} (${p.breed})`).join(', ')}. Focus on preventative care.`;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt
+        });
+        setTip(response.text || 'Keep your pets hydrated and active!');
+    } catch (e) {
+        setTip('Regular vet visits are key to long-term health.');
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+     getTip();
+  }, [pets.length]);
+
+  if (!tip && !loading) return null;
+
+  return (
+    <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-[1.5rem] border border-orange-100 flex gap-4 items-center mt-6 shadow-sm">
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-orange-500 shadow-sm shrink-0">
+            <Zap size={20} fill="currentColor" />
+        </div>
+        <div className="flex-1">
+             <h4 className="font-black text-orange-900 text-xs uppercase tracking-widest mb-1">AI Health Tip</h4>
+             {loading ? (
+                 <div className="h-4 bg-orange-200/50 rounded w-3/4 animate-pulse"></div>
+             ) : (
+                 <p className="text-sm font-bold text-orange-800 leading-tight">{tip}</p>
+             )}
+        </div>
+    </div>
+  );
+};
+
+const LogDetailModal = ({ log, pets, onClose }: any) => {
+  const pet = pets.find((p: Pet) => p.id === log.petId);
+  return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={onClose}>
+        <div className="w-full max-w-sm bg-white rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="relative h-32 bg-slate-100">
+                {pet ? <img src={pet.image} className="w-full h-full object-cover opacity-80" alt="" /> : <div className="w-full h-full bg-slate-200"></div>}
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent"></div>
+                <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 bg-black/20 text-white rounded-full flex items-center justify-center hover:bg-black/40 transition-colors backdrop-blur-md">
+                    <X size={16} />
+                </button>
+            </div>
+            <div className="px-6 pb-6 -mt-8 relative">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg mb-4 text-slate-700">
+                    <FileText size={32} />
+                </div>
+                <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 inline-block">{log.type}</span>
+                <h3 className="text-xl font-black text-slate-800 mb-1">{pet?.name || 'Pet'}</h3>
+                <p className="text-xs font-bold text-slate-400 mb-4">{log.date}</p>
+                
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-4">
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium">{log.description}</p>
+                </div>
+
+                {log.value && (
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Recorded Value:</span>
+                        <span className="text-sm font-black text-slate-800">{log.value}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+  );
+}
+
+const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
+   const [formData, setFormData] = useState({
+     petId: pets[0]?.id || '',
+     type: 'Checkup',
+     date: new Date().toISOString().split('T')[0],
+     description: '',
+     value: ''
+   });
+
+   const handleSubmit = () => {
+      if(!formData.description) return;
+      onSubmit({
+          id: Math.random().toString(36).substr(2, 9),
+          ...formData
+      });
+   };
+
+   return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="w-full sm:w-[90%] sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
+         <div className="flex justify-between items-center mb-6">
+           <h2 className="text-2xl font-black text-slate-800">Add Log</h2>
+           <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={20}/></button>
+         </div>
+         
+         <div className="space-y-4">
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {pets.map((p: Pet) => (
+                    <button 
+                        key={p.id} 
+                        onClick={() => setFormData({...formData, petId: p.id})}
+                        className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${formData.petId === p.id ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-100 text-slate-500'}`}
+                    >
+                        <img src={p.image} className="w-6 h-6 rounded-full object-cover" alt=""/>
+                        <span className="text-xs font-bold">{p.name}</span>
+                    </button>
+                ))}
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2">
+                {['Vaccination', 'Checkup', 'Medication', 'Note', 'Weight'].map(t => (
+                    <button 
+                        key={t}
+                        onClick={() => setFormData({...formData, type: t})}
+                        className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all ${formData.type === t ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-100 text-slate-400'}`}
+                    >
+                        {t}
+                    </button>
+                ))}
+            </div>
+
+            <textarea 
+                placeholder="Description / Notes..." 
+                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-800 text-sm outline-none focus:ring-2 focus:ring-orange-500/20"
+                rows={3}
+                value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value})}
+            />
+
+            <div className="flex gap-4">
+                <input 
+                    type="date" 
+                    value={formData.date}
+                    onChange={e => setFormData({...formData, date: e.target.value})}
+                    className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold text-slate-800 text-sm outline-none"
+                />
+                {(formData.type === 'Weight' || formData.type === 'Medication' || formData.type === 'Temperature') && (
+                    <input 
+                        type="text" 
+                        placeholder={formData.type === 'Weight' ? "kg" : "Value"}
+                        value={formData.value}
+                        onChange={e => setFormData({...formData, value: e.target.value})}
+                        className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold text-slate-800 text-sm outline-none"
+                    />
+                )}
+            </div>
+
+            <button onClick={handleSubmit} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-lg">Save Record</button>
+         </div>
+      </div>
+    </div>
+   );
+}
+
+const AddTempModal = ({ pets, onClose, onSubmit }: any) => {
+   const [formData, setFormData] = useState({
+     petId: pets[0]?.id || '',
+     value: '',
+     date: new Date().toISOString().split('T')[0],
+     note: ''
+   });
+
+   const handleSubmit = () => {
+      if(!formData.value) return;
+      onSubmit({
+          id: Math.random().toString(36).substr(2, 9),
+          petId: formData.petId,
+          type: 'Temperature',
+          date: formData.date,
+          value: formData.value,
+          description: formData.note || 'Temperature recorded'
+      });
+   };
+
+   return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6" onClick={onClose}>
+        <div className="w-full max-w-sm bg-white rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 mx-auto mb-4">
+                    <Thermometer size={32} />
+                </div>
+                <h2 className="text-xl font-black text-slate-800">Log Temperature</h2>
+                <p className="text-xs text-slate-400 font-bold mt-1">Keep track of vitals</p>
+            </div>
+
+            <div className="space-y-4">
+                 <div className="flex justify-center gap-2 mb-4">
+                    {pets.map((p: Pet) => (
+                        <button 
+                            key={p.id} 
+                            onClick={() => setFormData({...formData, petId: p.id})}
+                            className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${formData.petId === p.id ? 'border-orange-500 scale-110 shadow-md' : 'border-transparent opacity-50'}`}
+                        >
+                            <img src={p.image} className="w-full h-full object-cover" alt=""/>
+                        </button>
+                    ))}
+                 </div>
+
+                 <div className="relative">
+                    <input 
+                        type="number" 
+                        placeholder="101.5"
+                        value={formData.value}
+                        onChange={e => setFormData({...formData, value: e.target.value})}
+                        className="w-full p-4 text-center text-3xl font-black text-slate-800 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500/20"
+                        autoFocus
+                    />
+                    <span className="absolute right-8 top-1/2 -translate-y-1/2 font-black text-slate-300">°F</span>
+                 </div>
+
+                 <input 
+                    type="text" 
+                    placeholder="Optional notes..."
+                    value={formData.note}
+                    onChange={e => setFormData({...formData, note: e.target.value})}
+                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-600 text-xs outline-none"
+                 />
+
+                 <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button onClick={onClose} className="py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 text-xs uppercase tracking-wider">Cancel</button>
+                    <button onClick={handleSubmit} className="py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 text-xs uppercase tracking-wider">Save</button>
+                 </div>
+            </div>
+        </div>
+    </div>
+   );
+}
+
 const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   const [view, setView] = useState<'tracker' | 'vets' | 'history'>('tracker');
   const [activeSpecialty, setActiveSpecialty] = useState('General');
@@ -166,7 +405,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         },
         (err) => {
           console.error(err);
-          // Don't show an error here, just stop loading state. We will rely on mocks if location fails.
           setIsLocating(false);
         },
         { timeout: 10000, enableHighAccuracy: true }
@@ -177,7 +415,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   };
 
   const fetchVets = async (specialty: string, forceRefresh = false) => {
-    // FIX: If we are currently finding the location, WAIT. Do not fall back to mocks yet.
+    // If locating, wait. If no location and not locating (failed), allow fallback below.
     if (!location && isLocating) return;
 
     setActiveSpecialty(specialty);
@@ -190,18 +428,18 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     }
     
     setIsLoadingVets(true);
-    if (forceRefresh) setVetList([]); // Only clear if forcing refresh, otherwise keep showing old/empty
+    // Clear list only if we are forcing refresh (user action) or if we are switching tabs where context changes
+    if (forceRefresh) setVetList([]); 
     setLocationError(null);
 
     try {
-      // Safe check for API Key
-      const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
+      // Direct access to process.env.API_KEY
+      const apiKey = process.env.API_KEY;
       
       // Fallback: Use mock data ONLY if API key is missing OR (Location is missing AND we are done locating)
       if (!apiKey || (!location && !isLocating)) {
-          console.warn("API Key or Location missing. Using mock data.");
-          // Simulate network delay for realism
-          await new Promise(resolve => setTimeout(resolve, 800));
+          console.warn("Using Mock Data: API Key missing or Location failed.");
+          await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network
           
           const mocks = MOCK_VETS[specialty] || MOCK_VETS['General'];
           setVetList(mocks);
@@ -210,9 +448,9 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           return;
       }
 
+      // We have location and API key here
       const ai = new GoogleGenAI({ apiKey });
       
-      // Request 10 results instead of 5
       const prompt = `List 10 ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarians'} near the user.
       JSON Schema: [{ "name": "string", "address": "string", "distance": "string", "rating": number, "phone": "string", "isOpen": boolean }]`;
       
@@ -226,6 +464,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       });
       
       let parsedVets: VetInfo[] = [];
+      
+      // Attempt to parse JSON response if available
       try {
         const rawText = response.text || '';
         const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -233,11 +473,13 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
              parsedVets = JSON.parse(jsonText);
         }
       } catch (jsonError) {
-         // Fallback usually handled by grounding chunks below, but good to catch
+         // Ignore JSON parse errors, rely on grounding chunks
       }
 
-      // Grounding fallback is critical for Google Maps tool
+      // Process Grounding Chunks (Primary source for Maps tool)
       const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      
+      // If no JSON parsed, try to construct from chunks
       if (parsedVets.length === 0 && chunks.length > 0) {
           parsedVets = chunks.map((c: any) => {
             const src = c.maps || c.web;
@@ -246,30 +488,30 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                 name: src.title,
                 uri: src.googleMapsUri || src.uri,
                 specialty: specialty,
-                address: 'View in maps for details',
+                address: 'View details in Maps',
                 distance: 'Nearby',
-                rating: 4.5,
+                rating: 4.5, // Default if not provided
                 isOpen: true
             };
         }).filter((v: any) => v && v.name && v.uri);
       }
       
-      if (parsedVets.length === 0 && chunks.length === 0) {
+      if (parsedVets.length === 0) {
           throw new Error("No results found nearby.");
       }
 
-      // Use the global Map constructor
+      // Deduplicate by name
       const uniqueVets = Array.from(new Map(parsedVets.map(v => [v.name, v])).values());
+      
       setVetList(uniqueVets);
       setVetCache(prev => ({ ...prev, [specialty]: uniqueVets }));
       setCurrentPage(1);
 
     } catch (e: any) {
       console.error("Error fetching vets:", e);
-      // Silent Failover: Use Mock Data if API fails
+      // Fallback to mock on error
       const mocks = MOCK_VETS[specialty] || MOCK_VETS['General'];
       setVetList(mocks);
-      // We do NOT set locationError so the user sees the list
     } finally {
       setIsLoadingVets(false);
     }
@@ -279,40 +521,36 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     if (vet.uri && vet.uri.startsWith('http')) {
         window.open(vet.uri, '_blank');
     } else {
-        // Fallback to searching Google Maps with Name + Address
         const query = encodeURIComponent(`${vet.name} ${vet.address || ''}`);
         window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
     }
   };
 
   useEffect(() => {
+    // Only auto-fetch if we are in vets view and not currently loading
     if (view === 'vets' && !isLoadingVets) {
-      // Heuristic: Check if we currently have Mock Data loaded
       const isMockData = vetList.length > 0 && vetList[0].name === "City Paws Clinic";
       
       if (location) {
-         // We have location now. If we have no data, OR we have mock data, fetch real data.
+         // If we have location and (no data OR mock data), fetch real data
          if (vetList.length === 0 || isMockData) {
-             fetchVets(activeSpecialty, true); // Force refresh to get real data
+             fetchVets(activeSpecialty, true);
          }
       } else if (!isLocating && vetList.length === 0) {
-         // Location failed and we have no data, fetch (will trigger mock fallback)
+         // Location failed, fetch (will use mocks)
          fetchVets(activeSpecialty);
       }
-      // If !location && isLocating, do nothing (wait).
     }
-  }, [view, location, isLocating]); // Re-run when location status changes
+  }, [view, location, isLocating]);
 
   const sortedVets = useMemo(() => {
       let sorted = [...vetList];
       if (sortOption === 'rating') {
           sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       }
-      // Distance sorting is usually implicit from API
       return sorted;
   }, [vetList, sortOption]);
 
-  // Pagination Logic
   const totalPages = Math.ceil(sortedVets.length / itemsPerPage);
   const currentVets = sortedVets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -802,7 +1040,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         <AddLogModal 
           pets={pets} 
           onClose={() => setIsAddLogOpen(false)} 
-          onSubmit={(log) => { onAddLog(log); setIsAddLogOpen(false); }} 
+          onSubmit={(log: HealthLog) => { onAddLog(log); setIsAddLogOpen(false); }} 
         />
       )}
 
@@ -810,7 +1048,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         <AddTempModal 
           pets={pets} 
           onClose={() => setIsAddTempOpen(false)} 
-          onSubmit={(log) => { onAddLog(log); setIsAddTempOpen(false); }} 
+          onSubmit={(log: HealthLog) => { onAddLog(log); setIsAddTempOpen(false); }} 
         />
       )}
 
@@ -821,317 +1059,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           onClose={() => setSelectedLog(null)} 
         />
       )}
-    </div>
-  );
-};
-
-// --- Sub-Components ---
-
-const HealthSuggestions = ({ pets }: { pets: Pet[] }) => {
-  const hasDogs = pets.some(p => p.species === 'Dog');
-  if (!hasDogs) return null;
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-         <h3 className="font-bold text-xl text-slate-800">Care Suggestions</h3>
-         <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[10px] font-black uppercase">Dog Care</span>
-      </div>
-      
-      <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-         <div className="w-64 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm shrink-0 flex flex-col gap-3">
-            <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
-               <Shield size={20} />
-            </div>
-            <div>
-               <h4 className="font-black text-slate-800">Core Vaccines</h4>
-               <p className="text-xs text-slate-400 mt-1">Essential protection for every dog.</p>
-            </div>
-            <div className="space-y-1">
-               {['Rabies', 'DHPP (Distemper/Parvo)', 'Leptospirosis'].map(v => (
-                  <div key={v} className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                     <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> {v}
-                  </div>
-               ))}
-            </div>
-         </div>
-
-         <div className="w-64 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm shrink-0 flex flex-col gap-3">
-            <div className="w-10 h-10 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center">
-               <Zap size={20} />
-            </div>
-            <div>
-               <h4 className="font-black text-slate-800">Preventative</h4>
-               <p className="text-xs text-slate-400 mt-1">Monthly & seasonal treatments.</p>
-            </div>
-            <div className="space-y-1">
-               {['Heartworm Prevention', 'Flea & Tick Control', 'Annual Dental Clean'].map(v => (
-                  <div key={v} className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                     <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div> {v}
-                  </div>
-               ))}
-            </div>
-         </div>
-      </div>
-    </section>
-  )
-}
-
-const LogDetailModal = ({ log, pets, onClose }: { log: HealthLog, pets: Pet[], onClose: () => void }) => {
-   const pet = pets.find(p => p.id === log.petId);
-   let Icon = FileText;
-   let colorClass = "bg-slate-100 text-slate-500";
-   
-   if (log.type === 'Vaccination') { Icon = Syringe; colorClass = "bg-green-100 text-green-600"; }
-   else if (log.type === 'Checkup') { Icon = Stethoscope; colorClass = "bg-blue-100 text-blue-600"; }
-   else if (log.type === 'Medication') { Icon = Pill; colorClass = "bg-purple-100 text-purple-600"; }
-   else if (log.type === 'Temperature') { Icon = Thermometer; colorClass = "bg-orange-100 text-orange-600"; }
-   else if (log.type === 'Weight') { Icon = Activity; colorClass = "bg-pink-100 text-pink-600"; }
-
-   return (
-      <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6" onClick={onClose}>
-         <div className="w-full max-w-sm bg-white rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-6 pb-0 flex justify-between items-start">
-               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${colorClass}`}>
-                  <Icon size={28} />
-               </div>
-               <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100">
-                  <X size={20} />
-               </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-               <div>
-                  <h3 className="text-2xl font-black text-slate-900">{log.type}</h3>
-                  <div className="flex items-center gap-2 mt-2">
-                     {pet && <img src={pet.image} alt={pet.name} className="w-6 h-6 rounded-full object-cover border border-slate-100" />}
-                     <span className="font-bold text-slate-600">{pet?.name}</span>
-                     <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                     <span className="text-slate-400 font-medium text-sm">{log.date}</span>
-                  </div>
-               </div>
-               
-               {log.value && (
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
-                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recorded Value</span>
-                     <span className="text-2xl font-black text-slate-800">{log.value}</span>
-                  </div>
-               )}
-
-               <div className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Notes / Description</span>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-medium text-slate-700 leading-relaxed">
-                     {log.description}
-                  </div>
-               </div>
-
-               {log.attachments && log.attachments.length > 0 && (
-                  <div className="space-y-2">
-                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Documents</span>
-                     <div className="space-y-2">
-                        {log.attachments.map((file, idx) => (
-                           <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white">
-                              <div className="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center shrink-0">
-                                 <File size={16} />
-                              </div>
-                              <span className="text-xs font-bold text-slate-700 truncate flex-1">{file}</span>
-                              <ExternalLink size={14} className="text-slate-300" />
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               )}
-            </div>
-         </div>
-      </div>
-   )
-}
-
-const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
-   const [type, setType] = useState<HealthLog['type']>('Checkup');
-   const [petId, setPetId] = useState(pets[0]?.id || '');
-   const [desc, setDesc] = useState('');
-   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-   const [vaccine, setVaccine] = useState('');
-   const [documents, setDocuments] = useState<string[]>([]);
-   const fileInputRef = useRef<HTMLInputElement>(null);
-
-   const selectedPet = pets.find((p: Pet) => p.id === petId);
-   const species = selectedPet?.species || 'Dog';
-
-   const VACCINE_OPTIONS: Record<string, string[]> = {
-     'Dog': ['Rabies', 'DHPP', 'Bordetella', 'Leptospirosis', 'Lyme Disease', 'Canine Influenza'],
-     'Cat': ['Rabies', 'FVRCP', 'FeLV', 'FIV'],
-     'Rabbit': ['Myxomatosis', 'RHD'],
-     'Bird': ['Polyomavirus', 'Pacheco\'s'],
-     'Other': ['Rabies', 'Distemper']
-   };
-   const currentVaccines = VACCINE_OPTIONS[species as keyof typeof VACCINE_OPTIONS] || VACCINE_OPTIONS['Other'];
-
-   useEffect(() => { setVaccine(''); setDesc(''); }, [type, petId]);
-
-   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-         setDocuments(prev => [...prev, e.target.files![0].name]);
-      }
-   };
-
-   const removeDoc = (index: number) => setDocuments(prev => prev.filter((_, i) => i !== index));
-
-   const handleSubmit = () => {
-      let finalDesc = desc;
-      if (type === 'Vaccination') {
-          if (vaccine === 'Other') { if (!desc) return; finalDesc = desc; }
-          else if (vaccine) { finalDesc = vaccine; }
-          else { return; }
-      } else { if (!desc) return; }
-      onSubmit({ id: Math.random().toString(36).substr(2, 9), petId, type, date, description: finalDesc, attachments: documents });
-   };
-
-   return (
-      <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center">
-         <div className="w-full sm:w-[90%] sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-               <h3 className="text-xl font-black text-slate-800">Add Health Record</h3>
-               <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={20}/></button>
-            </div>
-            <div className="space-y-4">
-               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                  {pets.map((p: Pet) => (
-                     <button key={p.id} onClick={() => setPetId(p.id)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${petId === p.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <img src={p.image} className="w-6 h-6 rounded-full object-cover" alt="" />
-                        <span className="text-xs font-bold">{p.name}</span>
-                     </button>
-                  ))}
-               </div>
-               <div className="grid grid-cols-2 gap-2">
-                  {['Checkup', 'Vaccination', 'Medication', 'Note'].map(t => (
-                     <button key={t} onClick={() => setType(t as any)} className={`py-3 rounded-xl text-xs font-black uppercase tracking-wide border ${type === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-slate-50 border-slate-50 text-slate-500'}`}>
-                        {t}
-                     </button>
-                  ))}
-               </div>
-               
-               <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Date</label>
-                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-               </div>
-
-               {type === 'Vaccination' ? (
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Select Vaccine</label>
-                     <div className="flex flex-wrap gap-2">
-                        {currentVaccines.map(v => (
-                           <button key={v} onClick={() => setVaccine(v)} className={`px-3 py-2 rounded-xl text-xs font-bold border ${vaccine === v ? 'bg-blue-500 text-white border-blue-500' : 'bg-white border-slate-100 text-slate-500'}`}>{v}</button>
-                        ))}
-                        <button onClick={() => setVaccine('Other')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${vaccine === 'Other' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white border-slate-100 text-slate-500'}`}>Other</button>
-                     </div>
-                     {vaccine === 'Other' && (
-                        <input type="text" placeholder="Vaccine Name" value={desc} onChange={(e) => setDesc(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 text-sm mt-2 focus:outline-none" />
-                     )}
-                  </div>
-               ) : (
-                  <div className="space-y-1">
-                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Details</label>
-                     <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Enter details..." className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 text-sm h-32 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-                  </div>
-               )}
-
-               <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Attachments</label>
-                     <button onClick={() => fileInputRef.current?.click()} className="text-orange-500 text-[10px] font-black uppercase flex items-center gap-1"><Upload size={12} /> Upload</button>
-                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-                  </div>
-                  {documents.length > 0 && (
-                     <div className="space-y-2">
-                        {documents.map((doc, i) => (
-                           <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                              <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{doc}</span>
-                              <button onClick={() => removeDoc(i)} className="text-slate-400 hover:text-red-500"><X size={14} /></button>
-                           </div>
-                        ))}
-                     </div>
-                  )}
-               </div>
-
-               <button onClick={handleSubmit} className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] font-black shadow-xl active:scale-[0.98] transition-all">Save Record</button>
-            </div>
-         </div>
-      </div>
-   );
-};
-
-const AddTempModal = ({ pets, onClose, onSubmit }: any) => {
-  const [petId, setPetId] = useState(pets[0]?.id || '');
-  const [temp, setTemp] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
-  const [notes, setNotes] = useState('');
-
-  const handleSubmit = () => {
-    if (!temp || !petId) return;
-    onSubmit({
-      id: Math.random().toString(36).substr(2, 9),
-      petId,
-      type: 'Temperature',
-      date: `${date} ${time}`,
-      value: temp,
-      description: notes || 'Regular temperature check',
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center">
-      <div className="w-full sm:w-[90%] sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300">
-        <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-black text-slate-800">Log Temperature</h3>
-            <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={20}/></button>
-        </div>
-        
-        <div className="space-y-6">
-           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {pets.map((p: Pet) => (
-                 <button key={p.id} onClick={() => setPetId(p.id)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${petId === p.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <img src={p.image} className="w-6 h-6 rounded-full object-cover" alt="" />
-                    <span className="text-xs font-bold">{p.name}</span>
-                 </button>
-              ))}
-           </div>
-
-           <div className="flex items-center justify-center py-4">
-              <div className="relative">
-                 <input 
-                   type="number" 
-                   value={temp} 
-                   onChange={(e) => setTemp(e.target.value)} 
-                   placeholder="--" 
-                   className="w-40 text-center text-5xl font-black text-slate-800 placeholder:text-slate-200 outline-none"
-                   autoFocus
-                 />
-                 <span className="absolute top-2 -right-6 text-xl font-black text-slate-400">°F</span>
-              </div>
-           </div>
-
-           <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Date</label>
-                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-800 text-sm" />
-              </div>
-              <div className="space-y-1">
-                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Time</label>
-                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-800 text-sm" />
-              </div>
-           </div>
-
-           <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Notes (Optional)</label>
-              <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. After exercise" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-800 text-sm" />
-           </div>
-
-           <button onClick={handleSubmit} className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] font-black shadow-xl active:scale-[0.98] transition-all">Save Log</button>
-        </div>
-      </div>
     </div>
   );
 };
