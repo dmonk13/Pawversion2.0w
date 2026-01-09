@@ -94,6 +94,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
   const [isAddTempOpen, setIsAddTempOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<HealthLog | null>(null);
+  const [showVaxDetails, setShowVaxDetails] = useState(false);
 
   useEffect(() => {
     locateUser();
@@ -110,8 +111,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   }, [logs]);
 
   // Calculate Vaccine Status dynamically
-  const vaxStatus = useMemo(() => {
-    if (pets.length === 0) return '0/0';
+  const vaxData = useMemo(() => {
+    if (pets.length === 0) return { status: '0/0', details: [] };
 
     const CORE_VACCINES: Record<string, string[]> = {
         'Dog': ['Rabies', 'DHPP', 'Bordetella', 'Leptospirosis'],
@@ -122,27 +123,33 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     };
 
     let totalNeeded = 0;
-    const needs = new Set<string>();
+    let satisfied = 0;
+    const details: {petName: string, vaccine: string, completed: boolean}[] = [];
     
     pets.forEach(pet => {
         const species = pet.species || 'Other';
         const cores = CORE_VACCINES[species] || CORE_VACCINES['Other'];
-        totalNeeded += cores.length;
-        cores.forEach(v => needs.add(`${pet.id}-${v}`));
+        
+        cores.forEach(vName => {
+            totalNeeded++;
+            const hasLog = logs.some(l => 
+                l.petId === pet.id && 
+                l.type === 'Vaccination' && 
+                (l.description.includes(vName) || (l.value && l.value.includes(vName)))
+            );
+            if (hasLog) satisfied++;
+            details.push({
+                petName: pet.name,
+                vaccine: vName,
+                completed: hasLog
+            });
+        });
     });
     
-    let satisfied = 0;
-    needs.forEach(need => {
-        const [pId, vName] = need.split('-');
-        const hasLog = logs.some(l => 
-            l.petId === pId && 
-            l.type === 'Vaccination' && 
-            (l.description.includes(vName) || (l.value && l.value.includes(vName)))
-        );
-        if (hasLog) satisfied++;
-    });
-    
-    return `${satisfied}/${totalNeeded}`;
+    return {
+        status: `${satisfied}/${totalNeeded}`,
+        details
+    };
   }, [pets, logs]);
 
   const locateUser = () => {
@@ -659,11 +666,47 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-green-50 rounded-bl-[2.5rem] -mr-6 -mt-6 z-0"></div>
+        <div 
+          className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-2 relative group"
+          onMouseLeave={() => setShowVaxDetails(false)}
+        >
+          <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+             <div className="absolute top-0 right-0 w-20 h-20 bg-green-50 rounded-bl-[2.5rem] -mr-6 -mt-6 z-0"></div>
+          </div>
+
+          <button 
+             onClick={(e) => { e.stopPropagation(); setShowVaxDetails(!showVaxDetails); }}
+             onMouseEnter={() => setShowVaxDetails(true)}
+             className="absolute top-3 right-3 w-8 h-8 bg-white/50 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-400 hover:bg-green-100 hover:text-green-600 transition-colors z-20"
+          >
+             <Info size={16} />
+          </button>
+
+          {showVaxDetails && (
+             <div className="absolute top-12 right-0 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-30 animate-in fade-in zoom-in-95 duration-200">
+                 <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-50">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Vaccines</h4>
+                    <button onClick={(e) => { e.stopPropagation(); setShowVaxDetails(false); }} className="text-slate-300 hover:text-slate-500"><X size={14} /></button>
+                 </div>
+                 <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+                    {vaxData.details.map((item, i) => (
+                       <div key={i} className="flex items-center justify-between group/item">
+                          <div className="flex items-center gap-2.5">
+                             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${item.completed ? 'bg-green-500 border-green-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-300'}`}>
+                                {item.completed && <Check size={10} strokeWidth={4} />}
+                             </div>
+                             <span className={`text-xs font-bold ${item.completed ? 'text-slate-700' : 'text-slate-400'}`}>{item.vaccine}</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 py-0.5 rounded-md">{item.petName}</span>
+                       </div>
+                    ))}
+                 </div>
+             </div>
+          )}
+
           <ShieldCheck className="text-green-500 relative z-10" size={24} />
           <div>
-            <span className="text-2xl font-black text-slate-800 relative z-10">{vaxStatus}</span>
+            <span className="text-2xl font-black text-slate-800 relative z-10">{vaxData.status}</span>
             <div className="flex items-center gap-1">
                <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest relative z-10">Vax Status</span>
             </div>
