@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Match, Pet } from '../types';
 import { 
@@ -17,7 +16,8 @@ import {
   MapPin,
   ShieldCheck,
   Check,
-  Activity
+  Activity,
+  MessageCircle
 } from 'lucide-react';
 import AIAdvisor from './AIAdvisor';
 
@@ -41,14 +41,13 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
   const [viewingProfile, setViewingProfile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Initialize messages with sample data for demonstration
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({
-     'm1': [ // Cooper
+     'm1': [
          { text: "Hey! We saw Luna at the park yesterday. She's so fast!", isMe: false, time: '10:00 AM' },
          { text: "Yeah she loves chasing frisbees! 🥏", isMe: true, time: '10:05 AM' },
          { text: "Woof! When are we playing? 🦴", isMe: false, time: '10m' }
      ],
-     'm2': [ // Bella
+     'm2': [
          { text: "Are you going to the puppy meetup?", isMe: false, time: 'Yesterday' },
          { text: "We might be a bit late.", isMe: true, time: 'Yesterday' },
          { text: "See you at the park tomorrow!", isMe: false, time: '1h' }
@@ -78,7 +77,6 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
       }));
       setChatInput('');
 
-      // Auto-reply simulation for demo
       if (activeMatch?.type === 'pet') {
           setTimeout(() => {
               setMessages(prev => ({
@@ -102,7 +100,6 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
           };
           reader.readAsDataURL(file);
       }
-      // Reset input
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -112,15 +109,117 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
       </div>
   );
 
-  // --- Render Chat Interface ---
-  if (activeMatchId && activeMatch) {
-     if (activeMatch.type === 'ai') {
-         return (
-             <div className="flex flex-col h-full bg-white relative">
-                 {/* Frosted Glass Header */}
+  // --- COMPONENT: Chat List ---
+  const ChatList = () => (
+    <div className="flex flex-col h-full bg-white">
+       <div className="p-6 pb-2 pt-8">
+           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Messages</h2>
+           <div className="mt-4 relative">
+               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+               <input type="text" placeholder="Search chats..." className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-11 pr-4 text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-slate-800" />
+           </div>
+       </div>
+
+       {/* New Matches Stories */}
+       <div className="space-y-4 mt-2 border-b border-slate-50 pb-4">
+           <h3 className="px-6 text-xs font-black uppercase text-slate-400 tracking-widest">New Matches</h3>
+           <div className="flex gap-4 overflow-x-auto no-scrollbar px-6">
+               <button 
+                 onClick={() => onSelectMatch('ai_expert')}
+                 className="flex flex-col items-center gap-2 shrink-0 group"
+               >
+                   <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-orange-400 to-amber-500 relative shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
+                       <div className="w-full h-full rounded-full border-[3px] border-white overflow-hidden bg-orange-50">
+                           {AI_AVATAR}
+                       </div>
+                       <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                   </div>
+                   <span className="text-xs font-bold text-slate-800">Dr. Paw</span>
+               </button>
+
+               {matches.filter(m => m.type !== 'ai').map((match) => (
+                   <button 
+                     key={match.id} 
+                     onClick={() => onSelectMatch(match.id)}
+                     className="flex flex-col items-center gap-2 shrink-0 group"
+                   >
+                       <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-pink-500 to-rose-500 relative group-hover:scale-105 transition-transform">
+                           <div className="w-full h-full rounded-full border-[3px] border-white overflow-hidden">
+                               <img src={match.image} alt={match.name} className="w-full h-full object-cover" />
+                           </div>
+                           <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                       </div>
+                       <span className="text-xs font-bold text-slate-700 max-w-[64px] truncate">{match.name}</span>
+                   </button>
+               ))}
+           </div>
+       </div>
+
+       {/* Messages List */}
+       <div className="flex-1 overflow-y-auto">
+            <h3 className="px-6 py-3 text-xs font-black uppercase text-slate-400 tracking-widest sticky top-0 bg-white z-10">Recent</h3>
+            <div className="space-y-1 px-2 pb-24 md:pb-4">
+                {matches.map(match => (
+                    <button 
+                        key={match.id} 
+                        onClick={() => onSelectMatch(match.id)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-[1.5rem] transition-colors text-left group border ${activeMatchId === match.id ? 'bg-orange-50 border-orange-100' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-100'}`}
+                    >
+                        <div className="relative shrink-0">
+                            {match.type === 'ai' ? (
+                                <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-100 shadow-sm">
+                                    {AI_AVATAR}
+                                </div>
+                            ) : (
+                                <img src={match.image} alt={match.name} className="w-12 h-12 rounded-full object-cover border border-slate-100 shadow-sm" />
+                            )}
+                            
+                            {match.type === 'ai' ? (
+                                <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5 shadow-sm">
+                                    <div className="w-3.5 h-3.5 bg-orange-500 rounded-full flex items-center justify-center">
+                                        <Sparkles size={6} className="text-white" fill="currentColor" />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+                            )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center mb-1">
+                                <h4 className="font-black text-slate-800 text-sm flex items-center gap-1.5 truncate">
+                                    {match.name} 
+                                    {match.type === 'ai' && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[9px] font-black uppercase tracking-wide">AI</span>}
+                                </h4>
+                                <span className={`text-[10px] font-bold ${match.unread ? 'text-orange-500' : 'text-slate-400'}`}>
+                                    {match.lastMessageTime || 'Now'}
+                                </span>
+                            </div>
+                            <p className={`text-xs truncate ${match.unread ? 'text-slate-900 font-bold' : 'text-slate-500 font-medium'}`}>
+                                {match.lastMessage || (match.type === 'ai' ? 'Ready to help!' : 'Say hello! 👋')}
+                            </p>
+                        </div>
+                        
+                        {match.unread && (
+                            <div className="w-2.5 h-2.5 bg-orange-500 rounded-full shadow-sm shadow-orange-500/50"></div>
+                        )}
+                    </button>
+                ))}
+            </div>
+       </div>
+    </div>
+  );
+
+  // --- COMPONENT: Active Chat ---
+  const ActiveChat = () => {
+    if (!activeMatchId || !activeMatch) return null;
+
+    if (activeMatch.type === 'ai') {
+        return (
+            <div className="flex flex-col h-full bg-white relative">
                  <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-white/95 backdrop-blur-md sticky top-0 z-20 shadow-sm">
                      <div className="flex items-center gap-3">
-                         <button onClick={() => onSelectMatch(undefined)} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors">
+                         <button onClick={() => onSelectMatch(undefined)} className="md:hidden w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors">
                              <ArrowLeft size={24} className="text-slate-800" />
                          </button>
                          <div className="relative">
@@ -141,18 +240,16 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
                      </button>
                  </div>
                  
-                 {/* AI Chat Container - Ensure it fills height */}
                  <div className="flex-1 overflow-hidden relative z-10 bg-slate-50">
                      <AIAdvisor pets={pets} />
                  </div>
-             </div>
-         );
-     }
+            </div>
+        );
+    }
 
-     // Regular Pet Chat
-     const currentMessages = messages[activeMatchId] || [];
-     
-     return (
+    const currentMessages = messages[activeMatchId] || [];
+
+    return (
         <div className="flex flex-col h-full bg-slate-50 relative">
              {/* Profile View Overlay */}
              {viewingProfile && (
@@ -254,7 +351,7 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
              {/* Chat Header */}
              <div className="px-4 py-3 bg-white/95 backdrop-blur-md border-b border-slate-100 flex items-center justify-between sticky top-0 z-20 shadow-sm">
                  <div className="flex items-center gap-3">
-                     <button onClick={() => onSelectMatch(undefined)} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors">
+                     <button onClick={() => onSelectMatch(undefined)} className="md:hidden w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors">
                          <ArrowLeft size={24} className="text-slate-800" />
                      </button>
                      <button 
@@ -310,7 +407,7 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
                  ))}
              </div>
 
-             {/* Input Area - Redesigned for Visibility */}
+             {/* Input Area */}
              <div className="p-3 bg-white border-t border-slate-100 pb-safe z-20">
                  <div className="flex items-end gap-2 bg-slate-100 p-1.5 rounded-[2rem] border border-slate-100">
                      <input 
@@ -349,108 +446,33 @@ const Matches: React.FC<MatchesProps> = ({ matches, pets, activeMatchId, onSelec
                  </div>
              </div>
         </div>
-     );
-  }
+    );
+  };
 
-  // --- Render Matches List View ---
   return (
-    <div className="flex flex-col h-full bg-white animate-in fade-in duration-500 pb-24">
-       <div className="p-6 pb-2 pt-8">
-           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Messages</h2>
-           <div className="mt-4 relative">
-               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-               <input type="text" placeholder="Search chats..." className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-11 pr-4 text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-slate-800" />
-           </div>
-       </div>
+    <div className="flex h-full bg-slate-50 overflow-hidden relative">
+      {/* Desktop Layout: Split View */}
+      {/* List Panel - Hidden on mobile if active match exists */}
+      <div className={`w-full md:w-80 lg:w-96 flex-col border-r border-slate-100 bg-white ${activeMatchId ? 'hidden md:flex' : 'flex'}`}>
+        <ChatList />
+      </div>
 
-       {/* New Matches Stories */}
-       <div className="space-y-4 mt-2">
-           <h3 className="px-6 text-xs font-black uppercase text-slate-400 tracking-widest">New Matches</h3>
-           <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-4">
-               {/* Dr. Paw Story */}
-               <button 
-                 onClick={() => onSelectMatch('ai_expert')}
-                 className="flex flex-col items-center gap-2 shrink-0 group"
-               >
-                   <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-orange-400 to-amber-500 relative shadow-lg shadow-orange-500/20">
-                       <div className="w-full h-full rounded-full border-[3px] border-white overflow-hidden bg-orange-50">
-                           {AI_AVATAR}
-                       </div>
-                       <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                   </div>
-                   <span className="text-xs font-bold text-slate-800">Dr. Paw</span>
-               </button>
-
-               {matches.filter(m => m.type !== 'ai').map((match) => (
-                   <button 
-                     key={match.id} 
-                     onClick={() => onSelectMatch(match.id)}
-                     className="flex flex-col items-center gap-2 shrink-0 group"
-                   >
-                       <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-pink-500 to-rose-500 relative">
-                           <div className="w-full h-full rounded-full border-[3px] border-white overflow-hidden">
-                               <img src={match.image} alt={match.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                           </div>
-                           <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                       </div>
-                       <span className="text-xs font-bold text-slate-700 max-w-[64px] truncate">{match.name}</span>
-                   </button>
-               ))}
-           </div>
-       </div>
-
-       {/* Messages List */}
-       <div className="flex-1 overflow-y-auto mt-2">
-            <h3 className="px-6 text-xs font-black uppercase text-slate-400 tracking-widest mb-2">Recent</h3>
-            <div className="space-y-1 px-2 pb-24">
-                {matches.map(match => (
-                    <button 
-                        key={match.id} 
-                        onClick={() => onSelectMatch(match.id)}
-                        className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 rounded-[1.5rem] transition-colors text-left group border border-transparent hover:border-slate-100"
-                    >
-                        <div className="relative shrink-0">
-                            {match.type === 'ai' ? (
-                                <div className="w-14 h-14 rounded-full overflow-hidden border border-slate-100 shadow-sm">
-                                    {AI_AVATAR}
-                                </div>
-                            ) : (
-                                <img src={match.image} alt={match.name} className="w-14 h-14 rounded-full object-cover border border-slate-100 shadow-sm" />
-                            )}
-                            
-                            {match.type === 'ai' ? (
-                                <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5 shadow-sm">
-                                    <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
-                                        <Sparkles size={8} className="text-white" fill="currentColor" />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
-                            )}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center mb-1">
-                                <h4 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
-                                    {match.name} 
-                                    {match.type === 'ai' && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[9px] font-black uppercase tracking-wide">AI</span>}
-                                </h4>
-                                <span className={`text-[10px] font-bold ${match.unread ? 'text-orange-500' : 'text-slate-400'}`}>
-                                    {match.lastMessageTime || 'Now'}
-                                </span>
-                            </div>
-                            <p className={`text-xs truncate ${match.unread ? 'text-slate-900 font-bold' : 'text-slate-500 font-medium'}`}>
-                                {match.lastMessage || (match.type === 'ai' ? 'Ready to help!' : 'Say hello! 👋')}
-                            </p>
-                        </div>
-                        
-                        {match.unread && (
-                            <div className="w-2.5 h-2.5 bg-orange-500 rounded-full shadow-sm shadow-orange-500/50"></div>
-                        )}
-                    </button>
-                ))}
+      {/* Chat Panel - Hidden on mobile if no active match */}
+      <div className={`flex-1 flex flex-col relative ${!activeMatchId ? 'hidden md:flex' : 'flex'}`}>
+        {activeMatchId ? (
+            <ActiveChat />
+        ) : (
+            <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 p-6 text-center">
+                <div className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-sm mb-4">
+                    <MessageCircle size={40} className="text-orange-200" />
+                </div>
+                <h3 className="text-xl font-black text-slate-800">Select a Conversation</h3>
+                <p className="text-sm text-slate-400 mt-2 max-w-xs">
+                    Choose a match from the list to start chatting or ask Dr. Paw for advice.
+                </p>
             </div>
-       </div>
+        )}
+      </div>
     </div>
   );
 };

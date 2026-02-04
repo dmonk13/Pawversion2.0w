@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Pet, HealthLog } from '../types';
 import { 
@@ -47,7 +46,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
     }
   }, [initialSelectedId, pets]);
 
-  // Update local selectedPet if the list of pets changes (e.g. after edit)
   useEffect(() => {
     if (selectedPet) {
       const updated = pets.find(p => p.id === selectedPet.id);
@@ -55,7 +53,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
     }
   }, [pets]);
 
-  // Reset gallery expansion when switching pets
   useEffect(() => {
     setIsGalleryExpanded(false);
   }, [selectedPet]);
@@ -67,16 +64,13 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
   };
 
   const handleRemove = () => {
-    // Close menu first for better UX
     setIsMenuOpen(false);
-    
-    // Small delay to allow menu animation to finish and UI to update before blocking confirm
     setTimeout(() => {
         if (selectedPet && window.confirm(`Are you sure you want to remove ${selectedPet.name}? This action cannot be undone.`)) {
             const idToRemove = selectedPet.id;
-            setSelectedPet(null); // Go back to list immediately
+            setSelectedPet(null);
             onClearSelection();
-            onRemovePet(idToRemove); // Trigger removal in parent
+            onRemovePet(idToRemove);
         }
     }, 100);
   };
@@ -105,7 +99,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
             throw new Error('Web Share API not supported');
           }
       } catch (err) {
-          // Fallback to clipboard
           const clipboardText = `${shareData.title}\n${shareData.text}`;
           navigator.clipboard.writeText(clipboardText).then(() => {
              alert("Pet profile details copied to clipboard!");
@@ -135,7 +128,7 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
 
   if (selectedPet) {
     return (
-      <div className="animate-in slide-in-from-right duration-500 h-full bg-white flex flex-col relative">
+      <div className="animate-in slide-in-from-right duration-500 h-full bg-white flex flex-col relative md:rounded-[2.5rem] md:overflow-hidden md:border md:border-slate-100 md:shadow-xl max-w-4xl mx-auto my-0 md:my-6">
         
         {/* Passport Style QR Modal */}
         {showQrModal && (
@@ -144,7 +137,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
                 className="w-full max-w-[340px] relative animate-in zoom-in-95 duration-300" 
                 onClick={e => e.stopPropagation()}
              >
-                {/* Close Button */}
                 <button 
                   onClick={() => setShowQrModal(false)}
                   className="absolute -top-12 right-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
@@ -152,21 +144,16 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
                   <X size={20} />
                 </button>
 
-                {/* Passport Card */}
                 <div className="bg-[#1e40af] text-white rounded-[1.5rem] overflow-hidden shadow-2xl relative">
-                  {/* Background Texture Dots */}
                   <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                   
-                  {/* Card Content */}
                   <div className="relative z-10 p-6 space-y-6">
-                    {/* Header */}
                     <div className="flex justify-between items-start">
                        <div>
                           <h4 className="text-[10px] font-bold tracking-[0.2em] text-blue-200 uppercase">Official Passport</h4>
                           <h2 className="text-3xl font-serif font-bold text-white mt-1 tracking-wide">PAWPAL</h2>
                        </div>
                        
-                       {/* QR Code Stamp */}
                        <div className="bg-white p-2 rounded-xl shadow-lg transform rotate-3">
                           <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(JSON.stringify({
@@ -181,7 +168,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
                        </div>
                     </div>
 
-                    {/* Body */}
                     <div className="flex gap-4">
                        <img 
                          src={selectedPet.image} 
@@ -204,10 +190,8 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
                        </div>
                     </div>
 
-                    {/* Divider */}
                     <div className="h-px bg-blue-400/30 w-full"></div>
 
-                    {/* Footer Stats */}
                     <div className="flex justify-between items-center px-1">
                        <div>
                           <p className="text-[9px] font-bold text-blue-200 uppercase tracking-widest mb-1">Born</p>
@@ -224,12 +208,10 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
                     </div>
                   </div>
                   
-                  {/* Decorative Circles */}
                   <div className="absolute -bottom-12 -right-12 w-48 h-48 border border-white/10 rounded-full"></div>
                   <div className="absolute -bottom-8 -right-8 w-48 h-48 border border-white/10 rounded-full"></div>
                 </div>
 
-                {/* Action Button */}
                 <button className="w-full mt-6 bg-white text-slate-900 py-4 rounded-2xl font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
                    <Download size={18} /> Save to Gallery
                 </button>
@@ -238,7 +220,7 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
         )}
 
         {/* Detail Header */}
-        <div className="relative h-[40vh] shrink-0">
+        <div className="relative h-[40vh] md:h-[45vh] shrink-0">
           <img src={selectedPet.image} alt={selectedPet.name} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
           
@@ -249,9 +231,7 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
             <ArrowLeft size={24} />
           </button>
           
-          {/* More Menu Container */}
           <div className="absolute top-6 right-6 z-50">
-             {/* Overlay for closing menu */}
              {isMenuOpen && (
                  <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
              )}
@@ -302,7 +282,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
             <StatBox icon={<MapPin size={18} />} value="Home" label="Location" />
           </div>
 
-          {/* Bio Section */}
           {selectedPet.bio && (
              <section className="space-y-2">
                 <h3 className="font-bold text-xl text-slate-800">About {selectedPet.name}</h3>
@@ -310,7 +289,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
              </section>
           )}
 
-          {/* Temperament Section */}
           {selectedPet.temperament && selectedPet.temperament.length > 0 && (
             <section className="space-y-4">
               <h3 className="font-bold text-xl text-slate-800">Temperament</h3>
@@ -341,7 +319,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
             </button>
           </section>
 
-          {/* Health & Allergies Section */}
           <section className="space-y-4">
              <div className="flex justify-between items-center">
                 <h3 className="font-bold text-xl text-slate-800">Health & Conditions</h3>
@@ -404,7 +381,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
           </section>
         </div>
 
-        {/* Add Health Issue Modal */}
         {showHealthModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center">
              <div className="w-full sm:w-[90%] sm:max-w-sm bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300 shadow-2xl">
@@ -442,7 +418,6 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
           </div>
         )}
 
-        {/* Image Full Screen Modal */}
         {selectedImage && (
             <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setSelectedImage(null)}>
                 <button 
@@ -464,8 +439,9 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
     );
   }
 
+  // --- Grid List View for Pets ---
   return (
-    <div className="p-6 space-y-6 animate-in fade-in duration-500">
+    <div className="p-6 space-y-6 animate-in fade-in duration-500 pb-32">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-black text-slate-800">Pets Family</h2>
@@ -479,12 +455,12 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
         </button>
       </div>
 
-      <div className="grid gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {pets.map(pet => (
           <button 
             key={pet.id} 
             onClick={() => setSelectedPet(pet)}
-            className="bg-white rounded-[2.5rem] p-4 border border-slate-100 shadow-sm flex items-center gap-5 group active:scale-[0.98] transition-all text-left"
+            className="bg-white rounded-[2.5rem] p-4 border border-slate-100 shadow-sm flex items-center gap-5 group active:scale-[0.98] transition-all text-left hover:shadow-lg hover:border-orange-100"
           >
             <div className="relative">
               <img src={pet.image} alt={pet.name} className="w-24 h-24 object-cover rounded-[1.8rem]" />

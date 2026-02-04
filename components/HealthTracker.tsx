@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { Pet, HealthLog } from '../types';
 import { 
   FileText, 
@@ -29,7 +28,8 @@ import {
   Check,
   ArrowRight,
   Shield,
-  ExternalLink
+  ExternalLink,
+  Calendar
 } from 'lucide-react';
 
 interface Props {
@@ -48,6 +48,9 @@ interface VetInfo {
   phone?: string;
   isOpen?: boolean;
 }
+
+// Replace this with your actual Render URL after deployment
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 
 // Mock Data for Fallback
 const MOCK_VETS: Record<string, VetInfo[]> = {
@@ -194,12 +197,10 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     setLocationError(null);
 
     try {
-      // Safe check for API Key
-      const apiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
       
-      // Fallback: Use mock data ONLY if API key is missing OR (Location is missing AND we are done locating)
-      if (!apiKey || (!location && !isLocating)) {
-          console.warn("API Key or Location missing. Using mock data.");
+      // Fallback: Use mock data if Location is missing AND we are done locating
+      if ((!location && !isLocating)) {
+          console.warn("Location missing. Using mock data.");
           // Simulate network delay for realism
           await new Promise(resolve => setTimeout(resolve, 800));
           
@@ -210,24 +211,20 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           return;
       }
 
-      const ai = new GoogleGenAI({ apiKey });
-      
-      // Request 10 results instead of 5
-      const prompt = `List 10 ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarians'} near the user.
-      JSON Schema: [{ "name": "string", "address": "string", "distance": "string", "rating": number, "phone": "string", "isOpen": boolean }]`;
-      
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          tools: [{ googleMaps: {} }],
-          toolConfig: { retrievalConfig: { latLng: { latitude: location!.lat, longitude: location!.lng } } }
-        }
+      // Call Backend API
+      const response = await fetch(`${API_BASE_URL}/api/find-vets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ specialty, location })
       });
+
+      if (!response.ok) throw new Error('Backend vet search failed');
+      
+      const data = await response.json();
       
       let parsedVets: VetInfo[] = [];
       try {
-        const rawText = response.text || '';
+        const rawText = data.text || '';
         const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
         if (jsonText.startsWith('[') || jsonText.startsWith('{')) {
              parsedVets = JSON.parse(jsonText);
@@ -236,8 +233,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
          // Fallback usually handled by grounding chunks below, but good to catch
       }
 
-      // Grounding fallback is critical for Google Maps tool
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      // Grounding fallback (Handle metadata from backend if passed)
+      const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       if (parsedVets.length === 0 && chunks.length > 0) {
           parsedVets = chunks.map((c: any) => {
             const src = c.maps || c.web;
@@ -341,7 +338,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
          </div>
 
          <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
-            <div className="relative border-l-2 border-slate-200 ml-3 space-y-8 py-2">
+            <div className="relative border-l-2 border-slate-200 ml-3 space-y-8 py-2 max-w-3xl mx-auto">
                {logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log, index) => {
                  const pet = pets.find(p => p.id === log.petId);
                  let Icon = FileText;
@@ -415,7 +412,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       <div className="flex flex-col h-full bg-slate-50 animate-in slide-in-from-right duration-300">
         {/* Vet Connect Header - Sticky */}
         <div className="bg-white/95 backdrop-blur-md pt-6 pb-2 shadow-sm sticky top-0 z-30 border-b border-slate-100">
-          <div className="flex items-center justify-between px-6 mb-4">
+          <div className="flex items-center justify-between px-6 mb-4 max-w-5xl mx-auto w-full">
             <div className="flex items-center gap-4">
                 <button 
                 onClick={() => setView('tracker')}
@@ -442,7 +439,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           </div>
           
           {/* Controls Row - Integrated */}
-          <div className="flex items-center pl-6 gap-2 pb-2">
+          <div className="flex items-center pl-6 gap-2 pb-2 max-w-5xl mx-auto w-full">
              {/* Filter Toggle */}
              <button 
                onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -472,7 +469,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           {/* Filter Options Panel */}
           {isFilterOpen && (
               <div className="px-6 pb-4 animate-in slide-in-from-top-2">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 max-w-lg mx-auto">
                     <div className="flex justify-between items-center mb-3">
                         <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sort By</span>
                     </div>
@@ -507,7 +504,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
 
           {/* Error State */}
           {locationError && !isLocating && (
-             <div className="p-5 bg-red-50 text-red-600 rounded-2xl text-xs font-bold flex flex-col gap-3 border border-red-100 items-start">
+             <div className="p-5 bg-red-50 text-red-600 rounded-2xl text-xs font-bold flex flex-col gap-3 border border-red-100 items-start max-w-lg mx-auto">
                <div className="flex items-center gap-2">
                  <AlertCircle size={18} /> 
                  <span>{locationError}</span>
@@ -518,9 +515,9 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
 
           {/* Results */}
           {!isLocating && !locationError && (
-             <>
+             <div className="max-w-5xl mx-auto">
                {isLoadingVets ? (
-                 <div className="space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                    {[1, 2, 3].map(i => (
                      <div key={i} className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 animate-pulse">
                         <div className="flex justify-between mb-4">
@@ -540,6 +537,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                  <div className="space-y-4">
                    {currentVets.length > 0 ? (
                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {currentVets.map((vet, idx) => (
                         <div key={idx} className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 transition-all hover:shadow-lg group relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
                             <div className="flex justify-between items-start mb-3">
@@ -591,6 +589,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                             )}
                         </div>
                         ))}
+                        </div>
 
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
@@ -628,7 +627,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                    )}
                  </div>
                )}
-             </>
+             </div>
           )}
         </div>
       </div>
@@ -648,8 +647,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-2 relative overflow-hidden group">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="md:col-span-1 bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-2 relative overflow-hidden group">
           <button 
             onClick={() => setIsAddTempOpen(true)}
             className="absolute top-3 right-3 w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-orange-50 hover:text-orange-500 transition-colors z-20"
@@ -667,7 +666,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         </div>
 
         <div 
-          className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-2 relative group"
+          className="md:col-span-1 bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-2 relative group"
           onMouseLeave={() => setShowVaxDetails(false)}
         >
           <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
@@ -712,33 +711,31 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
             </div>
           </div>
         </div>
-      </div>
 
-      <section>
-        <button 
-          onClick={() => setView('vets')}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden group active:scale-[0.98] transition-all text-left"
-        >
-           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-           <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8 blur-xl"></div>
-           
-           <div className="relative z-10 flex items-center justify-between">
-             <div className="space-y-2">
-               <div className="flex items-center gap-2 mb-1">
-                 <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
-                   <Stethoscope size={20} className="text-white" />
-                 </div>
-                 <span className="text-[10px] font-black uppercase tracking-widest text-blue-200">Vet Connect</span>
-               </div>
-               <h3 className="text-2xl font-black leading-tight max-w-[70%]">Find Nearby Veterinarians</h3>
-               <p className="text-blue-100 text-xs font-medium max-w-[80%]">Locate clinics, emergency care, and specialists instantly.</p>
-             </div>
-             <div className="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-               <ArrowRight size={24} />
-             </div>
-           </div>
-        </button>
-      </section>
+        <div className="col-span-2 md:col-span-2">
+            <button 
+              onClick={() => setView('vets')}
+              className="w-full h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden group active:scale-[0.98] transition-all text-left flex items-center justify-between"
+            >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8 blur-xl"></div>
+            
+            <div className="relative z-10 space-y-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-md">
+                    <Stethoscope size={16} className="text-white" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-200">Vet Connect</span>
+                </div>
+                <h3 className="text-xl font-black leading-tight">Find Nearby Veterinarians</h3>
+                <p className="text-blue-100 text-xs font-medium">Locate clinics & specialists instantly.</p>
+            </div>
+            <div className="w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform relative z-10">
+                <ArrowRight size={20} />
+            </div>
+            </button>
+        </div>
+      </div>
 
       <HealthSuggestions pets={pets} />
 
@@ -753,7 +750,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-3xl">
           {logs.slice(0, 5).map(log => {
              const pet = pets.find(p => p.id === log.petId);
              let Icon = FileText;
@@ -802,7 +799,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         <AddLogModal 
           pets={pets} 
           onClose={() => setIsAddLogOpen(false)} 
-          onSubmit={(log) => { onAddLog(log); setIsAddLogOpen(false); }} 
+          onSubmit={(log: HealthLog) => { onAddLog(log); setIsAddLogOpen(false); }} 
         />
       )}
 
@@ -810,7 +807,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         <AddTempModal 
           pets={pets} 
           onClose={() => setIsAddTempOpen(false)} 
-          onSubmit={(log) => { onAddLog(log); setIsAddTempOpen(false); }} 
+          onSubmit={(log: HealthLog) => { onAddLog(log); setIsAddTempOpen(false); }} 
         />
       )}
 
@@ -989,8 +986,8 @@ const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
    };
 
    return (
-      <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center">
-         <div className="w-full sm:w-[90%] sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-4 sm:p-0">
+         <div className="w-full sm:w-[500px] bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center mb-6">
                <h3 className="text-xl font-black text-slate-800">Add Health Record</h3>
                <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={20}/></button>
@@ -1012,50 +1009,45 @@ const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
                   ))}
                </div>
                
-               <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Date</label>
-                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                     <Calendar size={16} className="text-slate-400" />
+                     <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-transparent font-bold text-slate-800 text-sm outline-none" />
+                  </div>
+                  
+                  {type === 'Vaccination' ? (
+                     <div className="space-y-2">
+                        <select value={vaccine} onChange={e => setVaccine(e.target.value)} className="w-full p-3 bg-white border border-slate-100 rounded-xl font-bold text-slate-700 text-sm outline-none">
+                           <option value="" disabled>Select Vaccine</option>
+                           {currentVaccines.map(v => <option key={v} value={v}>{v}</option>)}
+                           <option value="Other">Other...</option>
+                        </select>
+                        {(vaccine === 'Other') && (
+                           <input type="text" placeholder="Enter vaccine name..." value={desc} onChange={e => setDesc(e.target.value)} className="w-full p-3 bg-white border border-slate-100 rounded-xl font-bold text-slate-700 text-sm outline-none" />
+                        )}
+                     </div>
+                  ) : (
+                     <textarea rows={3} placeholder={type === 'Medication' ? "Medicine name, dosage & frequency..." : "Describe health event..."} value={desc} onChange={e => setDesc(e.target.value)} className="w-full bg-transparent font-medium text-slate-700 text-sm outline-none resize-none placeholder:text-slate-400" />
+                  )}
                </div>
 
-               {type === 'Vaccination' ? (
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Select Vaccine</label>
-                     <div className="flex flex-wrap gap-2">
-                        {currentVaccines.map(v => (
-                           <button key={v} onClick={() => setVaccine(v)} className={`px-3 py-2 rounded-xl text-xs font-bold border ${vaccine === v ? 'bg-blue-500 text-white border-blue-500' : 'bg-white border-slate-100 text-slate-500'}`}>{v}</button>
-                        ))}
-                        <button onClick={() => setVaccine('Other')} className={`px-3 py-2 rounded-xl text-xs font-bold border ${vaccine === 'Other' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white border-slate-100 text-slate-500'}`}>Other</button>
-                     </div>
-                     {vaccine === 'Other' && (
-                        <input type="text" placeholder="Vaccine Name" value={desc} onChange={(e) => setDesc(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 text-sm mt-2 focus:outline-none" />
-                     )}
-                  </div>
-               ) : (
-                  <div className="space-y-1">
-                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Details</label>
-                     <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Enter details..." className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 text-sm h-32 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-                  </div>
-               )}
-
-               <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Attachments</label>
-                     <button onClick={() => fileInputRef.current?.click()} className="text-orange-500 text-[10px] font-black uppercase flex items-center gap-1"><Upload size={12} /> Upload</button>
-                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-                  </div>
+               <div>
+                  <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-orange-500 transition-colors mb-2">
+                     <Upload size={14} /> Attach Documents
+                  </button>
                   {documents.length > 0 && (
-                     <div className="space-y-2">
+                     <div className="flex flex-wrap gap-2">
                         {documents.map((doc, i) => (
-                           <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                              <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{doc}</span>
-                              <button onClick={() => removeDoc(i)} className="text-slate-400 hover:text-red-500"><X size={14} /></button>
-                           </div>
+                           <span key={i} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold flex items-center gap-1">
+                              {doc} <button onClick={() => removeDoc(i)}><X size={10} /></button>
+                           </span>
                         ))}
                      </div>
                   )}
                </div>
 
-               <button onClick={handleSubmit} className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] font-black shadow-xl active:scale-[0.98] transition-all">Save Record</button>
+               <button onClick={handleSubmit} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-lg">Save Record</button>
             </div>
          </div>
       </div>
@@ -1063,77 +1055,77 @@ const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
 };
 
 const AddTempModal = ({ pets, onClose, onSubmit }: any) => {
-  const [petId, setPetId] = useState(pets[0]?.id || '');
-  const [temp, setTemp] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
-  const [notes, setNotes] = useState('');
+   const [formData, setFormData] = useState({
+     petId: pets[0]?.id || '',
+     value: '',
+     date: new Date().toISOString().split('T')[0],
+     note: ''
+   });
 
-  const handleSubmit = () => {
-    if (!temp || !petId) return;
-    onSubmit({
-      id: Math.random().toString(36).substr(2, 9),
-      petId,
-      type: 'Temperature',
-      date: `${date} ${time}`,
-      value: temp,
-      description: notes || 'Regular temperature check',
-    });
-  };
+   const handleSubmit = () => {
+      if(!formData.value) return;
+      onSubmit({
+          id: Math.random().toString(36).substr(2, 9),
+          petId: formData.petId,
+          type: 'Temperature',
+          date: formData.date,
+          value: formData.value,
+          description: formData.note || 'Temperature recorded'
+      });
+   };
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center">
-      <div className="w-full sm:w-[90%] sm:max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300">
-        <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-black text-slate-800">Log Temperature</h3>
-            <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={20}/></button>
-        </div>
-        
-        <div className="space-y-6">
-           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {pets.map((p: Pet) => (
-                 <button key={p.id} onClick={() => setPetId(p.id)} className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${petId === p.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <img src={p.image} className="w-6 h-6 rounded-full object-cover" alt="" />
-                    <span className="text-xs font-bold">{p.name}</span>
-                 </button>
-              ))}
-           </div>
+   return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6" onClick={onClose}>
+        <div className="w-full max-w-sm bg-white rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 mx-auto mb-4">
+                    <Thermometer size={32} />
+                </div>
+                <h2 className="text-xl font-black text-slate-800">Log Temperature</h2>
+                <p className="text-xs text-slate-400 font-bold mt-1">Keep track of vitals</p>
+            </div>
 
-           <div className="flex items-center justify-center py-4">
-              <div className="relative">
+            <div className="space-y-4">
+                 <div className="flex justify-center gap-2 mb-4">
+                    {pets.map((p: Pet) => (
+                        <button 
+                            key={p.id} 
+                            onClick={() => setFormData({...formData, petId: p.id})}
+                            className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${formData.petId === p.id ? 'border-orange-500 scale-110 shadow-md' : 'border-transparent opacity-50'}`}
+                        >
+                            <img src={p.image} className="w-full h-full object-cover" alt=""/>
+                        </button>
+                    ))}
+                 </div>
+
+                 <div className="relative">
+                    <input 
+                        type="number" 
+                        placeholder="101.5"
+                        value={formData.value}
+                        onChange={e => setFormData({...formData, value: e.target.value})}
+                        className="w-full p-4 text-center text-3xl font-black text-slate-800 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500/20"
+                        autoFocus
+                    />
+                    <span className="absolute right-8 top-1/2 -translate-y-1/2 font-black text-slate-300">°F</span>
+                 </div>
+
                  <input 
-                   type="number" 
-                   value={temp} 
-                   onChange={(e) => setTemp(e.target.value)} 
-                   placeholder="--" 
-                   className="w-40 text-center text-5xl font-black text-slate-800 placeholder:text-slate-200 outline-none"
-                   autoFocus
+                    type="text" 
+                    placeholder="Optional notes..."
+                    value={formData.note}
+                    onChange={e => setFormData({...formData, note: e.target.value})}
+                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-600 text-xs outline-none"
                  />
-                 <span className="absolute top-2 -right-6 text-xl font-black text-slate-400">°F</span>
-              </div>
-           </div>
 
-           <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Date</label>
-                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-800 text-sm" />
-              </div>
-              <div className="space-y-1">
-                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Time</label>
-                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-800 text-sm" />
-              </div>
-           </div>
-
-           <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Notes (Optional)</label>
-              <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. After exercise" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-800 text-sm" />
-           </div>
-
-           <button onClick={handleSubmit} className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] font-black shadow-xl active:scale-[0.98] transition-all">Save Log</button>
+                 <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button onClick={onClose} className="py-3 rounded-xl font-bold text-slate-400 hover:bg-slate-50 text-xs uppercase tracking-wider">Cancel</button>
+                    <button onClick={handleSubmit} className="py-3 bg-orange-500 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 text-xs uppercase tracking-wider">Save</button>
+                 </div>
+            </div>
         </div>
-      </div>
     </div>
-  );
-};
+   );
+}
 
 export default HealthTracker;

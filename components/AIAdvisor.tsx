@@ -1,12 +1,13 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { Pet, ChatMessage } from '../types';
 import { Send, Sparkles, User, Brain, Heart, Info, Camera, Bot } from 'lucide-react';
 
 interface Props {
   pets: Pet[];
 }
+
+// Replace this with your actual Render URL after deployment
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 
 const AIAdvisor: React.FC<Props> = ({ pets }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -37,23 +38,24 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const systemInstruction = `You are PawPal AI, a veteran veterinarian and pet behavioral expert. 
-        You have access to the user's pets: ${pets.map(p => `${p.name} (${p.breed}, ${p.age}yrs)`).join(', ')}.
-        Keep responses concise, warm, and professional. Always use the pet names when relevant. 
-        If a medical emergency is implied, urgently advise visiting a real vet.`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [...messages, { role: 'user', content: textToSend }].map(m => ({
-          role: m.role,
-          parts: [{ text: m.content }]
-        })),
-        config: { systemInstruction, temperature: 0.8 }
+      // Call the backend API instead of Google SDK directly
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, { role: 'user', content: textToSend }],
+          pets: pets
+        }),
       });
 
-      setMessages(prev => [...prev, { role: 'model', content: response.text || "I'm processing that. One moment!" }]);
+      if (!response.ok) throw new Error('Backend request failed');
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'model', content: data.text || "I'm processing that. One moment!" }]);
     } catch (error) {
+      console.error(error);
       setMessages(prev => [...prev, { role: 'model', content: "My connection to the PawPal servers is a bit fuzzy. Let's try again!" }]);
     } finally {
       setIsLoading(false);

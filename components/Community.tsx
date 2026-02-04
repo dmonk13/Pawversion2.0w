@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { 
   Heart, 
@@ -125,8 +124,8 @@ const PetCard: React.FC<PetCardProps> = ({ pet, mode, onProfile, onSwipe }) => {
   if (exitDirection === 'right') animClass = 'translate-x-[120%] rotate-[15deg] opacity-0';
 
   return (
-    <div className={`group relative bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200/60 border border-slate-100 transition-all duration-300 ease-out transform mb-6 ${animClass}`}>
-        <div className="relative aspect-[4/5] cursor-pointer" onClick={() => onProfile(pet)}>
+    <div className={`group relative bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200/60 border border-slate-100 transition-all duration-300 ease-out transform ${animClass} flex flex-col h-full`}>
+        <div className="relative aspect-[4/5] cursor-pointer flex-1" onClick={() => onProfile(pet)}>
             <img 
                 src={pet.image} 
                 alt={pet.name} 
@@ -157,16 +156,6 @@ const PetCard: React.FC<PetCardProps> = ({ pet, mode, onProfile, onSwipe }) => {
                             </span>
                         ))}
                     </div>
-
-                    {pet.medicalHistory.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-white/10 flex flex-wrap gap-2">
-                           {pet.medicalHistory.map((med, i) => (
-                             <div key={i} className="flex items-center gap-1 text-[10px] text-white/90 bg-green-500/20 px-2 py-0.5 rounded-md border border-green-500/30">
-                                <Check size={10} /> {med}
-                             </div>
-                           ))}
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -178,7 +167,7 @@ const PetCard: React.FC<PetCardProps> = ({ pet, mode, onProfile, onSwipe }) => {
         </div>
 
         {/* Action Footer */}
-        <div className="p-4 flex items-center gap-3 bg-white">
+        <div className="p-4 flex items-center gap-3 bg-white border-t border-slate-50 shrink-0">
             <button 
                 onClick={(e) => handleAction(e, 'left')}
                 className="w-14 h-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-90"
@@ -224,8 +213,8 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({ pet, woofsLeft, onWoof, o
   const themeColor = mode === 'Play' ? 'orange' : 'pink';
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-5 shadow-xl shadow-slate-200/60 border border-slate-100 relative overflow-visible">
-      <div className="relative mb-4 cursor-pointer" onClick={() => onProfile(pet)}>
+    <div className="bg-white rounded-[2.5rem] p-5 shadow-xl shadow-slate-200/60 border border-slate-100 relative overflow-visible h-full flex flex-col">
+      <div className="relative mb-4 cursor-pointer flex-1" onClick={() => onProfile(pet)}>
         <img src={pet.image} alt={pet.name} className="w-full aspect-video object-cover rounded-[2rem]" />
         <div className={`absolute -bottom-3 right-4 bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border-2 border-white flex items-center gap-1 shadow-lg`}>
           <Sparkles size={12} className={mode === 'Play' ? "text-yellow-400" : "text-pink-400"} />
@@ -233,7 +222,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({ pet, woofsLeft, onWoof, o
         </div>
       </div>
       
-      <div className="mt-4 px-2">
+      <div className="mt-4 px-2 shrink-0">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-2xl font-black text-slate-800">{pet.name}</h3>
           <div className="flex items-center gap-2">
@@ -494,7 +483,8 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
       <div className="p-6 space-y-6 pb-32">
         {activeView === 'Discover' ? (
           filteredPets.length > 0 ? (
-            filteredPets.map((pet) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPets.map((pet) => (
               <PetCard 
                 key={pet.id} 
                 pet={pet} 
@@ -502,7 +492,8 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
                 onProfile={setSelectedProfile} 
                 onSwipe={handlePetAction} 
               />
-            ))
+            ))}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center px-8">
               <div className={`w-20 h-20 bg-${themeColor}-50 rounded-full flex items-center justify-center mb-4`}>
@@ -538,16 +529,18 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
                 </div>
              </div>
 
-             {spotlightPets.map((pet) => (
-               <SpotlightCard 
-                 key={pet.id} 
-                 pet={pet} 
-                 woofsLeft={woofsLeft} 
-                 onWoof={(id, msg) => handlePetAction(id, 'right')} 
-                 onProfile={setSelectedProfile}
-                 mode={mode}
-               />
-             ))}
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {spotlightPets.map((pet) => (
+                <SpotlightCard 
+                    key={pet.id} 
+                    pet={pet} 
+                    woofsLeft={woofsLeft} 
+                    onWoof={(id, msg) => handlePetAction(id, 'right')} 
+                    onProfile={setSelectedProfile}
+                    mode={mode}
+                />
+                ))}
+             </div>
              
              <div className="text-center py-8">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">You're all caught up!</p>
