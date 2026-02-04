@@ -6,6 +6,7 @@ export interface Pet {
   name: string;
   species: PetSpecies;
   breed: string;
+  sex?: 'Male' | 'Female';
   age: number;
   weight: number;
   origin?: string;

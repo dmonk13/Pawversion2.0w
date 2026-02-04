@@ -20,7 +20,8 @@ import {
   Scissors,
   Check,
   Lightbulb,
-  Users
+  Users,
+  CalendarPlus
 } from 'lucide-react';
 
 interface Props {
@@ -47,6 +48,20 @@ const FACTS = [
   "Whiskers help cats navigate in the dark by detecting subtle changes in air currents.",
   "Tail wagging has its own language: right for happy, left for nervous."
 ];
+
+// Helper to generate Google Calendar Link
+const generateGoogleCalendarUrl = (task: Task) => {
+    // Format start time
+    const startDateTime = new Date(`${task.date}T${task.time}`);
+    const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); // Default 30 min duration
+    
+    const format = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, '');
+    
+    const start = format(startDateTime);
+    const end = format(endDateTime);
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task.title)}&dates=${start}/${end}&details=${encodeURIComponent(task.type)}&sf=true&output=xml`;
+};
 
 const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, onAddTask, onToggleTask, onNavigate, userName }) => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -83,6 +98,10 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
   const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (completionPercentage / 100) * circumference;
+
+  const handleAddToCalendar = (task: Task) => {
+      window.open(generateGoogleCalendarUrl(task), '_blank');
+  };
 
   return (
     <div className="p-6 space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -254,12 +273,22 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
                             <h4 className={`font-bold text-slate-800 text-sm truncate ${task.completed ? 'line-through text-slate-400' : ''}`}>{petName}: {task.title}</h4>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{task.time} • {task.type}</p>
                         </div>
-                        <button 
-                            onClick={() => onToggleTask(task.id)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${task.completed ? 'bg-green-500 text-white' : 'bg-slate-50 text-slate-300 hover:text-green-500 hover:bg-green-50'}`}
-                        >
-                            {task.completed ? <CheckCircle size={18} /> : <Circle size={18} />}
-                        </button>
+                        
+                        <div className="flex gap-2">
+                             <button
+                               onClick={() => handleAddToCalendar(task)}
+                               className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                               title="Add to Google Calendar"
+                             >
+                                <CalendarPlus size={16} />
+                             </button>
+                             <button 
+                                onClick={() => onToggleTask(task.id)}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${task.completed ? 'bg-green-500 text-white' : 'bg-slate-50 text-slate-300 hover:text-green-500 hover:bg-green-50'}`}
+                            >
+                                {task.completed ? <CheckCircle size={18} /> : <Circle size={18} />}
+                            </button>
+                        </div>
                         </div>
                     );
                     })
@@ -315,6 +344,7 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
     frequency: 'Daily',
     completed: false
   });
+  const [addToGCal, setAddToGCal] = useState(false);
 
   const isValid = formData.title && formData.petId;
 
@@ -427,6 +457,18 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
             )}
           </div>
 
+          {/* Google Calendar Toggle */}
+          <div 
+            onClick={() => setAddToGCal(!addToGCal)}
+            className={`p-4 rounded-2xl border transition-all flex items-center gap-3 cursor-pointer ${addToGCal ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+          >
+             <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${addToGCal ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-300 bg-white'}`}>
+                {addToGCal && <Check size={12} strokeWidth={4} />}
+             </div>
+             <span className={`text-xs font-bold ${addToGCal ? 'text-indigo-700' : 'text-slate-500'}`}>Add to Google Calendar</span>
+             <CalendarPlus size={16} className={`ml-auto ${addToGCal ? 'text-indigo-500' : 'text-slate-400'}`} />
+          </div>
+
           <button 
             disabled={!isValid}
             onClick={() => {
@@ -435,6 +477,9 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
                 ...formData as Task
               };
               onSubmit(newTask);
+              if(addToGCal) {
+                  window.open(generateGoogleCalendarUrl(newTask), '_blank');
+              }
             }}
             className="w-full bg-slate-900 text-white py-4 rounded-[1.5rem] font-black shadow-xl hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 disabled:scale-100"
           >
