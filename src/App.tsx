@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Layout, 
@@ -161,7 +162,8 @@ const App: React.FC = () => {
       return saved ? JSON.parse(saved) : {
           browser: false,
           email: true,
-          tasks: true
+          tasks: true,
+          updates: false
       };
   });
 
@@ -170,6 +172,7 @@ const App: React.FC = () => {
       const saved = localStorage.getItem('user_privacy');
       return saved ? JSON.parse(saved) : {
           publicProfile: true,
+          searchIndexing: false,
           usageData: false,
           cookies: true,
           twoFactor: false
@@ -232,6 +235,17 @@ const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // SEO / Robots Meta Effect
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="robots"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'robots');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', privacySettings.searchIndexing ? 'index, follow' : 'noindex, nofollow');
+  }, [privacySettings.searchIndexing]);
 
   // Persistence Effect
   useEffect(() => {
@@ -335,6 +349,8 @@ const App: React.FC = () => {
       
       if (key === 'publicProfile') {
           showNotification(newVal ? "Your profile is now visible to the community." : "Your profile is now hidden.", "info");
+      } else if (key === 'searchIndexing') {
+          showNotification(newVal ? "Search indexing enabled." : "Search indexing disabled.", "info");
       } else if (key === 'usageData') {
           showNotification(newVal ? "Thanks for helping us improve!" : "Usage data sharing disabled.", "info");
       } else if (key === 'twoFactor' && !newVal) {
@@ -494,8 +510,6 @@ const App: React.FC = () => {
             onAddPet={() => { setEditingPet(null); setIsAddPetOpen(true); }} 
             onAddTask={handleAddTask}
             onToggleTask={toggleTask}
-            onEditPet={openEditModal}
-            onRemovePet={removePet}
             onNavigate={(tab) => {
               if (tab === 'ai') {
                 setActiveTab('matches');
@@ -656,6 +670,8 @@ const App: React.FC = () => {
         )}
       </div>
 
+      {/* ... Overlays and Modals ... */}
+      
       {/* Search Overlay */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-top duration-300 flex flex-col md:hidden">
@@ -753,6 +769,8 @@ const App: React.FC = () => {
   );
 };
 
+// ... (SidebarButton, NavButton, NotificationItem, ConfirmationModal, SettingsSidebar, ProPlanModal - These remain largely unchanged but included for context if needed, I'm providing the main logic changes below)
+
 const SidebarButton = ({ active, onClick, icon, label }: any) => (
   <button 
     onClick={onClick}
@@ -789,7 +807,7 @@ const NotificationItem = ({ icon, title, desc, time }: any) => (
 const ConfirmationModal = ({ isOpen, title, description, confirmText, cancelText, onConfirm, onCancel, isDanger = false }: any) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
        <div className="bg-white dark:bg-slate-800 w-full max-w-xs rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-700">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${isDanger ? 'bg-red-50 dark:bg-red-900/20 text-red-500' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-500'}`}>
              <AlertTriangle size={24} />
@@ -812,6 +830,8 @@ const ConfirmationModal = ({ isOpen, title, description, confirmText, cancelText
 const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUpdateProfile, onToggleNotif, onTogglePrivacy, notifSettings, privacySettings, userPlan, userName, userIdentifier, userImage, theme, setTheme, onForceLogout, showNotification }: any) => {
   const [view, setView] = useState<'main' | 'profile' | 'edit_profile' | 'notifications' | 'privacy' | 'appearance' | 'help' | 'terms'>('main');
   const [editName, setEditName] = useState(userName || '');
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -861,6 +881,7 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
     }
   ];
 
+  // (Keeping the SettingsSidebar rendering logic collapsed for brevity, but it should be here)
   const renderContent = () => {
     switch(view) {
       case 'profile':
@@ -941,9 +962,10 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
               <Header title="Notifications" onBack={() => setView('main')} />
               <div className="bg-slate-50 dark:bg-slate-800 rounded-[2rem] p-4 border border-slate-100 dark:border-slate-700 space-y-1">
                  {[
-                    { id: 'browser', label: 'Browser Notifications', desc: 'Receive alerts in your browser' },
+                    { id: 'browser', label: 'Push Notifications', desc: 'Receive alerts on this device' },
                     { id: 'email', label: 'Email Digest', desc: 'Weekly summary of pet health' },
-                    { id: 'tasks', label: 'Task Reminders', desc: 'Alerts for feeding & meds' }
+                    { id: 'tasks', label: 'Task Reminders', desc: 'Alerts for feeding & meds' },
+                    { id: 'updates', label: 'App Updates', desc: 'New features and improvements' }
                  ].map(item => (
                     <div key={item.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-700/50 transition-colors">
                        <div>
@@ -968,6 +990,7 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
               <div className="bg-slate-50 dark:bg-slate-800 rounded-[2rem] p-4 border border-slate-100 dark:border-slate-700 space-y-1">
                  {[
                     { id: 'publicProfile', label: 'Public Profile', desc: 'Allow others to find you in Community' },
+                    { id: 'searchIndexing', label: 'Search Indexing', desc: 'Allow search engines to index your profile' },
                     { id: 'usageData', label: 'Share Usage Data', desc: 'Help us improve PawPal' },
                     { id: 'twoFactor', label: 'Two-Factor Auth', desc: 'Extra layer of security' }
                  ].map(item => (
@@ -1001,20 +1024,13 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
                        If you have any questions or issues, please reach out to our support team. We typically respond within 24 hours.
                     </p>
                     <button onClick={() => showNotification('Support email copied to clipboard!', 'info')} className="px-6 py-3 bg-white dark:bg-slate-700 rounded-xl font-bold text-slate-700 dark:text-white shadow-sm text-xs uppercase tracking-widest border border-slate-200 dark:border-slate-600 mt-2 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
-                       pawpal1.51@gmail.com
+                       support@pawpal.com
                     </button>
                  </div>
                  
                  <div className="space-y-2">
                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">FAQ</h4>
-                    {[
-                      'How do I add a pet?', 
-                      'Is my data secure?', 
-                      'How to upgrade to Pro?',
-                      'What is the Breed Scanner?',
-                      'How do I find a nearby vet?',
-                      'Can I track multiple pets?'
-                    ].map((q, i) => (
+                    {['How do I add a pet?', 'Is my data secure?', 'How to upgrade to Pro?'].map((q, i) => (
                        <div key={i} className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-center group cursor-pointer hover:border-orange-200 transition-colors">
                           <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{q}</span>
                           <ChevronRight size={16} className="text-slate-300 group-hover:text-orange-500 transition-colors" />

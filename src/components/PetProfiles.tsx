@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Pet, HealthLog } from '../types';
 import { 
@@ -64,11 +65,17 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
   };
 
   const handleRemove = () => {
+    // Close menu first
     setIsMenuOpen(false);
+    
+    // Validate we have a pet selected
     if (!selectedPet) return;
 
-    if (window.confirm(`Are you sure you want to remove ${selectedPet.name}? This action cannot be undone.`)) {
-        const idToRemove = selectedPet.id;
+    const idToRemove = selectedPet.id;
+    const nameToRemove = selectedPet.name;
+
+    // Execute confirm immediately without setTimeout to prevent mobile browser blocking
+    if (window.confirm(`Are you sure you want to remove ${nameToRemove}? This action cannot be undone.`)) {
         setSelectedPet(null);
         onClearSelection();
         onRemovePet(idToRemove);
@@ -96,12 +103,18 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
           if (navigator.share) {
             await navigator.share(shareData);
           } else {
-            const clipboardText = `${shareData.title}\n${shareData.text}`;
-            await navigator.clipboard.writeText(clipboardText);
-            alert("Pet profile info copied to clipboard!");
+            throw new Error('Web Share API not supported');
           }
       } catch (err) {
-          console.error("Share failed", err);
+          // Robust Fallback to clipboard
+          const clipboardText = `${shareData.title}\n${shareData.text}`;
+          try {
+             await navigator.clipboard.writeText(clipboardText);
+             alert("Pet profile copied to clipboard!");
+          } catch (clipErr) {
+             console.error("Failed to copy", clipErr);
+             alert("Could not share profile. Please take a screenshot.");
+          }
       }
   };
 
@@ -386,7 +399,9 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
              <div className="w-full sm:w-[90%] sm:max-w-sm bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 animate-in slide-in-from-bottom duration-300 shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
                    <h3 className="text-xl font-black text-slate-800">Add Health Record</h3>
-                   <button onClick={() => setShowHealthModal(false)} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={20} /></button>
+                   <button onClick={() => setShowHealthModal(false)} className="p-2 bg-slate-50 rounded-full text-slate-400">
+                     <X size={20} />
+                   </button>
                 </div>
                 
                 <div className="space-y-4">
@@ -437,6 +452,7 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
     );
   }
 
+  // --- Grid List View for Pets ---
   return (
     <div className="p-6 space-y-6 animate-in fade-in duration-500 pb-32">
       <div className="flex justify-between items-center">

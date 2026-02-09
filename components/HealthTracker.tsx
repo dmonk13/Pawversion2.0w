@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Pet, HealthLog } from '../types';
 import { 
@@ -52,32 +53,13 @@ interface VetInfo {
 // Replace this with your actual Render URL after deployment
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 
-// Mock Data for Fallback
-const MOCK_VETS: Record<string, VetInfo[]> = {
-  'General': [
-    { name: "City Paws Clinic", address: "123 Main St", distance: "0.8 mi", rating: 4.8, specialty: "General", uri: "#", phone: "555-0123", isOpen: true },
-    { name: "Downtown Vet Hospital", address: "456 Oak Ave", distance: "1.2 mi", rating: 4.6, specialty: "General", uri: "#", phone: "555-0124", isOpen: true },
-    { name: "Pet First Care", address: "789 Pine Ln", distance: "2.5 mi", rating: 4.5, specialty: "General", uri: "#", phone: "555-0125", isOpen: false },
-  ],
-  'Emergency': [
-    { name: "24/7 Animal ER", address: "101 Emergency Dr", distance: "3.0 mi", rating: 4.9, specialty: "Emergency", uri: "#", phone: "555-9111", isOpen: true },
-    { name: "Urgent Pet Care", address: "55 Rescue Blvd", distance: "5.2 mi", rating: 4.7, specialty: "Emergency", uri: "#", phone: "555-9999", isOpen: true },
-  ],
-  'Dental': [
-    { name: "Happy Teeth Veterinary", address: "202 Smile Rd", distance: "5.0 mi", rating: 4.7, specialty: "Dental", uri: "#", phone: "555-3333", isOpen: true },
-  ],
-  'Surgeon': [
-    { name: "Advanced Pet Surgery", address: "500 Surgical Way", distance: "4.2 mi", rating: 4.9, specialty: "Surgeon", uri: "#", phone: "555-5000", isOpen: true },
-  ],
-  'Dermatology': [
-    { name: "Skin & Coat Clinic", address: "300 Derma Dr", distance: "3.5 mi", rating: 4.6, specialty: "Dermatology", uri: "#", phone: "555-3000", isOpen: true },
-  ]
-};
-
 const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   const [view, setView] = useState<'tracker' | 'vets' | 'history'>('tracker');
   const [activeSpecialty, setActiveSpecialty] = useState('General');
   
+  // Pet Selection State
+  const [selectedPetId, setSelectedPetId] = useState<string>(pets[0]?.id || '');
+
   // Vet Search State
   const [vetList, setVetList] = useState<VetInfo[]>([]);
   const [vetCache, setVetCache] = useState<Record<string, VetInfo[]>>({});
@@ -100,22 +82,34 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   const [showVaxDetails, setShowVaxDetails] = useState(false);
 
   useEffect(() => {
+    if (pets.length > 0 && !pets.find(p => p.id === selectedPetId)) {
+        setSelectedPetId(pets[0].id);
+    }
+  }, [pets]);
+
+  useEffect(() => {
     locateUser();
   }, []);
 
-  // Calculate Average Temp from Logs
+  const selectedPet = useMemo(() => pets.find(p => p.id === selectedPetId) || pets[0], [pets, selectedPetId]);
+
+  // Filter logs for selected pet
+  const petLogs = useMemo(() => {
+      return logs.filter(l => l.petId === selectedPetId);
+  }, [logs, selectedPetId]);
+
+  // Calculate Average Temp from Logs (Selected Pet)
   const avgTemp = useMemo(() => {
-    const tempLogs = logs.filter(l => l.type === 'Temperature' && l.value);
+    const tempLogs = petLogs.filter(l => l.type === 'Temperature' && l.value);
     if (tempLogs.length === 0) return 'N/A';
     
-    // Simple average logic
     const sum = tempLogs.reduce((acc, curr) => acc + parseFloat(curr.value || '0'), 0);
     return (sum / tempLogs.length).toFixed(1);
-  }, [logs]);
+  }, [petLogs]);
 
-  // Calculate Vaccine Status dynamically
+  // Calculate Vaccine Status (Selected Pet)
   const vaxData = useMemo(() => {
-    if (pets.length === 0) return { status: '0/0', details: [] };
+    if (!selectedPet) return { status: '0/0', details: [] };
 
     const CORE_VACCINES: Record<string, string[]> = {
         'Dog': ['Rabies', 'DHPP', 'Bordetella', 'Leptospirosis'],
@@ -125,39 +119,51 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         'Other': ['Rabies']
     };
 
-    let totalNeeded = 0;
+    const species = selectedPet.species || 'Other';
+    const cores = CORE_VACCINES[species] || CORE_VACCINES['Other'];
     let satisfied = 0;
-    const details: {petName: string, vaccine: string, completed: boolean}[] = [];
     
-    pets.forEach(pet => {
-        const species = pet.species || 'Other';
-        const cores = CORE_VACCINES[species] || CORE_VACCINES['Other'];
-        
-        cores.forEach(vName => {
-            totalNeeded++;
-            const hasLog = logs.some(l => 
-                l.petId === pet.id && 
-                l.type === 'Vaccination' && 
-                (l.description.includes(vName) || (l.value && l.value.includes(vName)))
-            );
-            if (hasLog) satisfied++;
-            details.push({
-                petName: pet.name,
-                vaccine: vName,
-                completed: hasLog
-            });
-        });
+    const details = cores.map(vName => {
+        const hasLog = petLogs.some(l => 
+            l.type === 'Vaccination' && 
+            (l.description.includes(vName) || (l.value && l.value.includes(vName)))
+        );
+        if (hasLog) satisfied++;
+        return { 
+            petName: selectedPet.name,
+            vaccine: vName, 
+            completed: hasLog 
+        };
     });
     
     return {
-        status: `${satisfied}/${totalNeeded}`,
+        status: `${satisfied}/${cores.length}`,
         details
     };
-  }, [pets, logs]);
+  }, [selectedPet, petLogs]);
 
-  const locateUser = () => {
+  const locateUser = async () => {
     setIsLocating(true);
     setLocationError(null);
+
+    // Helper for IP Fallback
+    const fallbackToIp = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        if (data.latitude && data.longitude) {
+          setLocation({ lat: data.latitude, lng: data.longitude });
+          setIsLocating(false);
+        } else {
+          throw new Error("Invalid IP data");
+        }
+      } catch (e) {
+        console.warn("IP Geolocation failed:", e);
+        setLocationError("Could not determine location.");
+        setIsLocating(false);
+      }
+    };
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -167,25 +173,32 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           });
           setIsLocating(false);
         },
-        (err) => {
-          console.error(err);
-          // Don't show an error here, just stop loading state. We will rely on mocks if location fails.
-          setIsLocating(false);
+        async (err) => {
+          console.warn("Native geolocation denied/failed, trying IP...", err);
+          await fallbackToIp();
         },
-        { timeout: 10000, enableHighAccuracy: true }
+        { timeout: 8000, enableHighAccuracy: true }
       );
     } else {
-      setIsLocating(false);
+      await fallbackToIp();
     }
   };
 
+  const getFallbackCard = (spec: string): VetInfo => ({
+      name: `Find ${spec} Veterinarians`,
+      address: "Tap to see results on Google Maps",
+      distance: "Search",
+      rating: 5.0,
+      specialty: spec,
+      uri: `https://www.google.com/maps/search/${spec}+veterinarian`,
+      isOpen: true
+  });
+
   const fetchVets = async (specialty: string, forceRefresh = false) => {
-    // FIX: If we are currently finding the location, WAIT. Do not fall back to mocks yet.
     if (!location && isLocating) return;
 
     setActiveSpecialty(specialty);
 
-    // Use Cache if available and not forced
     if (!forceRefresh && vetCache[specialty] && vetCache[specialty].length > 0) {
         setVetList(vetCache[specialty]);
         setCurrentPage(1);
@@ -193,25 +206,16 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     }
     
     setIsLoadingVets(true);
-    if (forceRefresh) setVetList([]); // Only clear if forcing refresh, otherwise keep showing old/empty
+    if (forceRefresh) setVetList([]); 
     setLocationError(null);
 
     try {
-      
-      // Fallback: Use mock data if Location is missing AND we are done locating
-      if ((!location && !isLocating)) {
-          console.warn("Location missing. Using mock data.");
-          // Simulate network delay for realism
-          await new Promise(resolve => setTimeout(resolve, 800));
-          
-          const mocks = MOCK_VETS[specialty] || MOCK_VETS['General'];
-          setVetList(mocks);
-          setVetCache(prev => ({ ...prev, [specialty]: mocks }));
+      if (!location) {
+          setVetList([getFallbackCard(specialty)]);
           setIsLoadingVets(false);
           return;
       }
 
-      // Call Backend API
       const response = await fetch(`${API_BASE_URL}/api/find-vets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -223,19 +227,10 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       const data = await response.json();
       
       let parsedVets: VetInfo[] = [];
-      try {
-        const rawText = data.text || '';
-        const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        if (jsonText.startsWith('[') || jsonText.startsWith('{')) {
-             parsedVets = JSON.parse(jsonText);
-        }
-      } catch (jsonError) {
-         // Fallback usually handled by grounding chunks below, but good to catch
-      }
-
-      // Grounding fallback (Handle metadata from backend if passed)
+      
+      // 1. Try to extract from Grounding Chunks (Primary Source for Maps Tool)
       const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-      if (parsedVets.length === 0 && chunks.length > 0) {
+      if (chunks.length > 0) {
           parsedVets = chunks.map((c: any) => {
             const src = c.maps || c.web;
             if (!src) return null;
@@ -243,30 +238,45 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                 name: src.title,
                 uri: src.googleMapsUri || src.uri,
                 specialty: specialty,
-                address: 'View in maps for details',
+                address: src.address || 'View details on map',
                 distance: 'Nearby',
-                rating: 4.5,
+                rating: 4.8, // Default high rating for AI picks if not provided
                 isOpen: true
             };
         }).filter((v: any) => v && v.name && v.uri);
       }
-      
-      if (parsedVets.length === 0 && chunks.length === 0) {
-          throw new Error("No results found nearby.");
+
+      // 2. If chunks failed, try parsing JSON from text (Fallback)
+      if (parsedVets.length === 0) {
+          try {
+            const rawText = data.text || '';
+            const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const start = jsonText.indexOf('[');
+            const end = jsonText.lastIndexOf(']');
+            if (start !== -1 && end !== -1) {
+                 parsedVets = JSON.parse(jsonText.substring(start, end + 1));
+            }
+          } catch (jsonError) {
+             console.warn("JSON parsing failed", jsonError);
+          }
       }
 
-      // Use the global Map constructor
+      // 3. If everything failed, use the smart fallback card
+      if (parsedVets.length === 0) {
+          console.warn("No structured vet data found. Using fallback link.");
+          parsedVets = [getFallbackCard(specialty)];
+      }
+
+      // Deduplicate by name
       const uniqueVets = Array.from(new Map(parsedVets.map(v => [v.name, v])).values());
+      
       setVetList(uniqueVets);
       setVetCache(prev => ({ ...prev, [specialty]: uniqueVets }));
       setCurrentPage(1);
 
     } catch (e: any) {
       console.error("Error fetching vets:", e);
-      // Silent Failover: Use Mock Data if API fails
-      const mocks = MOCK_VETS[specialty] || MOCK_VETS['General'];
-      setVetList(mocks);
-      // We do NOT set locationError so the user sees the list
+      setVetList([getFallbackCard(specialty)]);
     } finally {
       setIsLoadingVets(false);
     }
@@ -276,7 +286,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
     if (vet.uri && vet.uri.startsWith('http')) {
         window.open(vet.uri, '_blank');
     } else {
-        // Fallback to searching Google Maps with Name + Address
         const query = encodeURIComponent(`${vet.name} ${vet.address || ''}`);
         window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
     }
@@ -284,32 +293,26 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
 
   useEffect(() => {
     if (view === 'vets' && !isLoadingVets) {
-      // Heuristic: Check if we currently have Mock Data loaded
-      const isMockData = vetList.length > 0 && vetList[0].name === "City Paws Clinic";
+      const isPlaceholder = vetList.length === 1 && vetList[0].distance === "Search";
       
       if (location) {
-         // We have location now. If we have no data, OR we have mock data, fetch real data.
-         if (vetList.length === 0 || isMockData) {
-             fetchVets(activeSpecialty, true); // Force refresh to get real data
+         if (vetList.length === 0 || isPlaceholder) {
+             fetchVets(activeSpecialty, true);
          }
       } else if (!isLocating && vetList.length === 0) {
-         // Location failed and we have no data, fetch (will trigger mock fallback)
          fetchVets(activeSpecialty);
       }
-      // If !location && isLocating, do nothing (wait).
     }
-  }, [view, location, isLocating]); // Re-run when location status changes
+  }, [view, location, isLocating]);
 
   const sortedVets = useMemo(() => {
       let sorted = [...vetList];
       if (sortOption === 'rating') {
           sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       }
-      // Distance sorting is usually implicit from API
       return sorted;
   }, [vetList, sortOption]);
 
-  // Pagination Logic
   const totalPages = Math.ceil(sortedVets.length / itemsPerPage);
   const currentVets = sortedVets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -319,8 +322,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         listRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-
-  // --- Views ---
 
   if (view === 'history') {
     return (
@@ -333,13 +334,16 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
               >
                 <ChevronLeft size={24} />
               </button>
-              <h2 className="text-2xl font-black text-slate-900">Care Timeline</h2>
+              <div>
+                  <h2 className="text-2xl font-black text-slate-900">Care Timeline</h2>
+                  <p className="text-xs font-bold text-slate-400">{selectedPet?.name}</p>
+              </div>
             </div>
          </div>
 
          <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
             <div className="relative border-l-2 border-slate-200 ml-3 space-y-8 py-2 max-w-3xl mx-auto">
-               {logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log, index) => {
+               {petLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((log, index) => {
                  const pet = pets.find(p => p.id === log.petId);
                  let Icon = FileText;
                  let colorClass = "bg-slate-500 border-slate-500";
@@ -391,8 +395,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                    </div>
                  );
                })}
-               {logs.length === 0 && (
-                 <div className="pl-8 text-slate-400 text-sm italic py-10">No records found. Start tracking!</div>
+               {petLogs.length === 0 && (
+                 <div className="pl-8 text-slate-400 text-sm italic py-10">No records found for {selectedPet?.name}.</div>
                )}
             </div>
          </div>
@@ -410,7 +414,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   if (view === 'vets') {
     return (
       <div className="flex flex-col h-full bg-slate-50 animate-in slide-in-from-right duration-300">
-        {/* Vet Connect Header - Sticky */}
         <div className="bg-white/95 backdrop-blur-md pt-6 pb-2 shadow-sm sticky top-0 z-30 border-b border-slate-100">
           <div className="flex items-center justify-between px-6 mb-4 max-w-5xl mx-auto w-full">
             <div className="flex items-center gap-4">
@@ -425,7 +428,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                     <div className="flex items-center gap-1 text-slate-400 mt-1">
                         <MapPin size={10} />
                         <span className="text-[10px] font-bold uppercase tracking-wider truncate max-w-[150px]">
-                           {location ? "Nearby" : isLocating ? "Locating..." : "Using Demo Data"}
+                           {location ? "Nearby" : isLocating ? "Locating..." : "Online Mode"}
                         </span>
                     </div>
                 </div>
@@ -438,9 +441,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
             </button>
           </div>
           
-          {/* Controls Row - Integrated */}
           <div className="flex items-center pl-6 gap-2 pb-2 max-w-5xl mx-auto w-full">
-             {/* Filter Toggle */}
              <button 
                onClick={() => setIsFilterOpen(!isFilterOpen)}
                className={`h-10 px-4 rounded-xl border flex items-center gap-2 transition-all shrink-0 text-[10px] font-black uppercase tracking-wider ${isFilterOpen ? 'bg-slate-800 text-white border-slate-800' : 'bg-white border-slate-200 text-slate-600'}`}
@@ -448,7 +449,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                <SlidersHorizontal size={14} /> Filter
              </button>
 
-             {/* Horizontal Scroll Chips */}
              <div className="flex-1 overflow-x-auto no-scrollbar flex gap-2 pr-6">
                 {['General', 'Emergency', 'Dental', 'Surgeon', 'Dermatology'].map((spec) => (
                 <button
@@ -466,7 +466,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
             </div>
           </div>
 
-          {/* Filter Options Panel */}
           {isFilterOpen && (
               <div className="px-6 pb-4 animate-in slide-in-from-top-2">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 max-w-lg mx-auto">
@@ -492,9 +491,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           )}
         </div>
 
-        {/* Vet Content */}
         <div ref={listRef} className="p-6 space-y-4 pb-32 overflow-y-auto bg-slate-50 flex-1 scroll-smooth">
-          {/* Locating State */}
           {isLocating && !location && (
               <div className="flex flex-col items-center justify-center py-20 space-y-4 text-slate-400">
                   <div className="w-8 h-8 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin"></div>
@@ -502,7 +499,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
               </div>
           )}
 
-          {/* Error State */}
           {locationError && !isLocating && (
              <div className="p-5 bg-red-50 text-red-600 rounded-2xl text-xs font-bold flex flex-col gap-3 border border-red-100 items-start max-w-lg mx-auto">
                <div className="flex items-center gap-2">
@@ -513,7 +509,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
              </div>
           )}
 
-          {/* Results */}
           {!isLocating && !locationError && (
              <div className="max-w-5xl mx-auto">
                {isLoadingVets ? (
@@ -575,7 +570,8 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                                     <Navigation size={14} /> Directions
                                 </button>
                                 <a 
-                                    href={`tel:${vet.phone || ''}`}
+                                    href={vet.phone ? `tel:${vet.phone}` : undefined}
+                                    onClick={(e) => !vet.phone && handleDirections(vet)}
                                     className="flex-1 py-3 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-slate-100"
                                 >
                                     <Phone size={14} /> Call
@@ -591,7 +587,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                         ))}
                         </div>
 
-                        {/* Pagination Controls */}
                         {totalPages > 1 && (
                             <div className="flex justify-center items-center gap-4 mt-6 pt-2 pb-6">
                                 <button
@@ -637,14 +632,32 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   // Main Tracker View
   return (
     <div className="p-6 space-y-8 animate-in fade-in duration-500 pb-32">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Health Track</h2>
-        <button 
-          onClick={() => setView('history')}
-          className="text-orange-500 font-black text-xs uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors flex items-center gap-1"
-        >
-          <History size={14} /> History
-        </button>
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Health Track</h2>
+            <button 
+            onClick={() => setView('history')}
+            className="text-orange-500 font-black text-xs uppercase tracking-widest bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors flex items-center gap-1"
+            >
+            <History size={14} /> History
+            </button>
+        </div>
+
+        {/* Pet Selector for Multiple Pets */}
+        {pets.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                {pets.map(pet => (
+                    <button
+                        key={pet.id}
+                        onClick={() => setSelectedPetId(pet.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-2xl border transition-all ${selectedPetId === pet.id ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                    >
+                        <img src={pet.image} alt={pet.name} className="w-6 h-6 rounded-full object-cover border border-white/20" />
+                        <span className="text-xs font-bold">{pet.name}</span>
+                    </button>
+                ))}
+            </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -696,7 +709,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                              </div>
                              <span className={`text-xs font-bold ${item.completed ? 'text-slate-700' : 'text-slate-400'}`}>{item.vaccine}</span>
                           </div>
-                          <span className="text-[9px] font-bold text-slate-300 bg-slate-50 px-1.5 py-0.5 rounded-md">{item.petName}</span>
                        </div>
                     ))}
                  </div>
@@ -737,7 +749,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         </div>
       </div>
 
-      <HealthSuggestions pets={pets} />
+      <HealthSuggestions pet={selectedPet} />
 
       <section className="space-y-4 pt-4 border-t border-slate-100">
         <div className="flex justify-between items-center">
@@ -751,7 +763,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         </div>
 
         <div className="space-y-4 max-w-3xl">
-          {logs.slice(0, 5).map(log => {
+          {petLogs.slice(0, 5).map(log => {
              const pet = pets.find(p => p.id === log.petId);
              let Icon = FileText;
              let colorClass = "bg-slate-100 text-slate-500";
@@ -786,10 +798,10 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
               </button>
              );
           })}
-          {logs.length === 0 && (
+          {petLogs.length === 0 && (
             <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-3xl">
               <FileText className="mx-auto text-slate-200 mb-3" size={32} />
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">No records yet</p>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">No records yet for {selectedPet?.name}</p>
             </div>
           )}
         </div>
@@ -798,6 +810,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       {isAddLogOpen && (
         <AddLogModal 
           pets={pets} 
+          initialPetId={selectedPetId}
           onClose={() => setIsAddLogOpen(false)} 
           onSubmit={(log: HealthLog) => { onAddLog(log); setIsAddLogOpen(false); }} 
         />
@@ -806,6 +819,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       {isAddTempOpen && (
         <AddTempModal 
           pets={pets} 
+          initialPetId={selectedPetId}
           onClose={() => setIsAddTempOpen(false)} 
           onSubmit={(log: HealthLog) => { onAddLog(log); setIsAddTempOpen(false); }} 
         />
@@ -824,15 +838,30 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
 
 // --- Sub-Components ---
 
-const HealthSuggestions = ({ pets }: { pets: Pet[] }) => {
-  const hasDogs = pets.some(p => p.species === 'Dog');
-  if (!hasDogs) return null;
+const HealthSuggestions = ({ pet }: { pet?: Pet }) => {
+  if (!pet) return null;
+  const isDog = pet.species === 'Dog';
+  const isCat = pet.species === 'Cat';
+  
+  // Basic content switch for Demo purposes
+  const title = isDog ? 'Dog Care' : isCat ? 'Cat Care' : 'Pet Care';
+  const vaccines = isDog 
+    ? ['Rabies', 'DHPP (Distemper/Parvo)', 'Leptospirosis']
+    : isCat
+    ? ['Rabies', 'FVRCP', 'FeLV']
+    : ['Annual Checkup'];
+    
+  const prevention = isDog
+    ? ['Heartworm Prevention', 'Flea & Tick Control', 'Annual Dental Clean']
+    : isCat
+    ? ['Flea Control', 'Deworming', 'Dental Check']
+    : ['Habitat Cleaning', 'Diet Review'];
 
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
          <h3 className="font-bold text-xl text-slate-800">Care Suggestions</h3>
-         <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[10px] font-black uppercase">Dog Care</span>
+         <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-md text-[10px] font-black uppercase">{title}</span>
       </div>
       
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
@@ -842,10 +871,10 @@ const HealthSuggestions = ({ pets }: { pets: Pet[] }) => {
             </div>
             <div>
                <h4 className="font-black text-slate-800">Core Vaccines</h4>
-               <p className="text-xs text-slate-400 mt-1">Essential protection for every dog.</p>
+               <p className="text-xs text-slate-400 mt-1">Essential protection for {pet.name}.</p>
             </div>
             <div className="space-y-1">
-               {['Rabies', 'DHPP (Distemper/Parvo)', 'Leptospirosis'].map(v => (
+               {vaccines.map(v => (
                   <div key={v} className="flex items-center gap-2 text-xs font-bold text-slate-600">
                      <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> {v}
                   </div>
@@ -862,7 +891,7 @@ const HealthSuggestions = ({ pets }: { pets: Pet[] }) => {
                <p className="text-xs text-slate-400 mt-1">Monthly & seasonal treatments.</p>
             </div>
             <div className="space-y-1">
-               {['Heartworm Prevention', 'Flea & Tick Control', 'Annual Dental Clean'].map(v => (
+               {prevention.map(v => (
                   <div key={v} className="flex items-center gap-2 text-xs font-bold text-slate-600">
                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div> {v}
                   </div>
@@ -944,9 +973,9 @@ const LogDetailModal = ({ log, pets, onClose }: { log: HealthLog, pets: Pet[], o
    )
 }
 
-const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
+const AddLogModal = ({ pets, initialPetId, onClose, onSubmit }: any) => {
    const [type, setType] = useState<HealthLog['type']>('Checkup');
-   const [petId, setPetId] = useState(pets[0]?.id || '');
+   const [petId, setPetId] = useState(initialPetId || pets[0]?.id || '');
    const [desc, setDesc] = useState('');
    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
    const [vaccine, setVaccine] = useState('');
@@ -1054,9 +1083,9 @@ const AddLogModal = ({ pets, onClose, onSubmit }: any) => {
    );
 };
 
-const AddTempModal = ({ pets, onClose, onSubmit }: any) => {
+const AddTempModal = ({ pets, initialPetId, onClose, onSubmit }: any) => {
    const [formData, setFormData] = useState({
-     petId: pets[0]?.id || '',
+     petId: initialPetId || pets[0]?.id || '',
      value: '',
      date: new Date().toISOString().split('T')[0],
      note: ''

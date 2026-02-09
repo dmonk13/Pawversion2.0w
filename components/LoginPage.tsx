@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, ArrowRight, Check, Loader2, Wifi, WifiOff, Activity, Phone, ChevronLeft, Smartphone, X, Settings, Info, Copy, Sparkles, Star, Key } from 'lucide-react';
 
@@ -70,11 +71,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           return;
       }
 
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
+      const initializeGSI = () => {
          if ((window as any).google) {
             try {
                 const client = (window as any).google.accounts.oauth2.initTokenClient({
@@ -104,7 +101,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             }
          }
       };
-      document.body.appendChild(script);
+
+      if ((window as any).google) {
+          initializeGSI();
+      } else {
+          const script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.defer = true;
+          script.onload = initializeGSI;
+          document.body.appendChild(script);
+      }
     }
   }, [googleClientId]);
 
@@ -129,7 +136,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       localStorage.setItem('google_client_id', cleanedId);
       setGoogleClientId(cleanedId);
       setIsConfigOpen(false);
-      window.location.reload(); 
+      // Removed window.location.reload() to prevent 404s in some environments
+      // The useEffect [googleClientId] will handle re-initialization
   };
 
   const handleFinalLogin = (method: 'demo' | 'user', username: string, identifier?: string) => {
@@ -147,11 +155,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               tokenClient.requestAccessToken();
           } catch (e) {
               setIsLoading(false);
-              alert("Google Auth Client not ready. Please reload the page.");
+              alert("Google Auth Client not ready. Please wait a moment or check configuration.");
           }
       } else {
           if (googleClientId) {
-             alert("Google Sign-In is configured but not loaded. Please check your internet connection or Client ID.");
+             alert("Google Sign-In is configured but not fully loaded yet. Please wait a moment.");
           } else {
              setView('google_sim');
           }
@@ -346,7 +354,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                                 localStorage.removeItem('google_client_id');
                                 setGoogleClientId('');
                                 setTempClientId('');
-                                window.location.reload();
+                                setTokenClient(null);
                             }}
                             className="w-full py-3 text-red-500 text-xs font-bold hover:bg-red-50 rounded-xl"
                         >
