@@ -1,14 +1,14 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Pet, HealthLog, Task } from '../types';
-import { 
-  Clock, 
-  Heart, 
-  ArrowRight, 
-  Zap, 
-  Search, 
-  MapPin, 
-  SlidersHorizontal, 
+import {
+  Clock,
+  Heart,
+  ArrowRight,
+  Zap,
+  Search,
+  MapPin,
+  SlidersHorizontal,
   Star,
   PlusCircle,
   Repeat,
@@ -26,6 +26,7 @@ import {
   Camera,
   ScanLine
 } from 'lucide-react';
+import { GoogleGenAI } from '@google/genai';
 
 interface Props {
   pets: Pet[];
@@ -38,9 +39,6 @@ interface Props {
   onNavigate: (tab: any) => void;
   userName?: string;
 }
-
-// Replace this with your actual Render URL after deployment
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 
 const FACTS = [
   "Dogs can smell your feelings! They pick up on changes in your scent caused by emotions.",
@@ -556,20 +554,31 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         if (!image) return;
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/identify-breed`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image })
-            });
-            const data = await response.json();
-            if (data.text) {
-                setResult(data.text);
-            } else {
-                setResult("Could not identify. Please try again.");
+            const apiKey = (process.env as any).API_KEY || (process.env as any).GEMINI_API_KEY;
+
+            if (!apiKey) {
+                setResult("API key not configured. Please set your GEMINI_API_KEY in the environment variables.");
+                setLoading(false);
+                return;
             }
+
+            const ai = new GoogleGenAI({ apiKey });
+            const base64Data = image.split(',')[1] || image;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.0-flash-exp',
+                contents: [{
+                    parts: [
+                        { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
+                        { text: "Identify the dog breed in this image. Provide the breed name and 3 short bullet points about their typical personality traits. If it's not a dog, strictly say 'This doesn't look like a dog'." }
+                    ]
+                }],
+            });
+
+            setResult(response.text || "I couldn't identify the breed. Try a clearer photo!");
         } catch (error) {
-            console.error(error);
-            setResult("Error connecting to server. Make sure backend is running.");
+            console.error("Breed Scanner Error:", error);
+            setResult("Failed to analyze image. Please ensure your API key is valid and try again.");
         } finally {
             setLoading(false);
         }
