@@ -43,6 +43,12 @@ Deno.serve(async (req: Request) => {
       throw new Error('GEMINI_API_KEY not configured');
     }
 
+    const allMessages = [
+      { role: 'user', content: systemInstruction },
+      { role: 'model', content: 'Understood! I\'m PawPal AI, ready to help with your pets\' health and behavior.' },
+      ...messages
+    ];
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
       {
@@ -51,10 +57,7 @@ Deno.serve(async (req: Request) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
-          contents: messages.map(m => ({
+          contents: allMessages.map(m => ({
             role: m.role === 'model' ? 'model' : 'user',
             parts: [{ text: m.content }]
           })),
