@@ -6,8 +6,8 @@ interface Props {
   pets: Pet[];
 }
 
-// Replace this with your actual Render URL after deployment
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://nofthrmkxfekbypubjbe.supabase.co';
+const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
 
 const AIAdvisor: React.FC<Props> = ({ pets }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -38,11 +38,11 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     setIsLoading(true);
 
     try {
-      // Call the backend API instead of Google SDK directly
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           messages: [...messages, { role: 'user', content: textToSend }],
@@ -50,13 +50,13 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
         }),
       });
 
-      if (!response.ok) throw new Error('Backend request failed');
+      if (!response.ok) throw new Error('AI service request failed');
 
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'model', content: data.text || "I'm processing that. One moment!" }]);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: "My connection to the PawPal servers is a bit fuzzy. Let's try again!" }]);
+      setMessages(prev => [...prev, { role: 'model', content: "I'm having trouble connecting right now. Let's try again!" }]);
     } finally {
       setIsLoading(false);
     }
