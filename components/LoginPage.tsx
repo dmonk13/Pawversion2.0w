@@ -153,7 +153,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950 flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
       {BACKGROUND_IMAGES.map((img, idx) => (
         <div
           key={idx}
@@ -161,10 +161,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           style={{ backgroundImage: `url(${img})` }}
         />
       ))}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-slate-950/90 to-black/95 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-slate-900/80 to-black/90 backdrop-blur-md"></div>
 
-      <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/10">
+      <div className="relative z-10 w-full max-w-md mx-4 animate-in zoom-in-95 fade-in duration-500">
+        <div className="bg-white/98 backdrop-blur-2xl rounded-3xl shadow-2xl p-10 border border-white/20">
           {view === 'main' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center space-y-4">
