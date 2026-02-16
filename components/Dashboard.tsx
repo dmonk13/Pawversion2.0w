@@ -32,7 +32,7 @@ import {
   Trash2
 } from 'lucide-react';
 
-const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 interface Props {
   pets: Pet[];
@@ -405,10 +405,16 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         if (!image) return;
         setLoading(true);
         try {
+            if (!GEMINI_API_KEY) {
+                setResult("API key not found. Please add VITE_GEMINI_API_KEY to your .env file.");
+                setLoading(false);
+                return;
+            }
+
             const base64Data = image.split(',')[1] || image;
 
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
                 {
                     method: 'POST',
                     headers: {
@@ -433,15 +439,17 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
             );
 
             if (!response.ok) {
-                throw new Error('Failed to analyze image');
+                const errorData = await response.json();
+                console.error("API Error Response:", errorData);
+                throw new Error(errorData.error?.message || 'Failed to analyze image');
             }
 
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't identify the breed. Try a clearer photo!";
             setResult(text);
-        } catch (e) {
+        } catch (e: any) {
             console.error("AI Scan Error:", e);
-            setResult("Failed to analyze image. Please ensure your API key is valid and try again.");
+            setResult(`Error: ${e.message || 'Failed to analyze image. Please ensure your API key is valid and try again.'}`);
         } finally {
             setLoading(false);
         }
