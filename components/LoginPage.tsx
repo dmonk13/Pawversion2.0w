@@ -167,12 +167,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="bg-white/98 backdrop-blur-2xl rounded-3xl shadow-2xl p-10 border border-white/20">
           {view === 'main' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-center space-y-5">
-                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-3xl shadow-2xl shadow-orange-500/50 mb-2 ring-4 ring-orange-100 transform hover:scale-105 transition-transform">
-                  <span className="text-5xl font-black text-white drop-shadow-lg">P</span>
+              <div className="text-center space-y-4">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl shadow-xl shadow-orange-500/30 mb-4">
+                  <span className="text-4xl font-black text-white">P</span>
                 </div>
-                <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-tight">Welcome to PawPal</h1>
-                <p className="text-slate-700 text-lg font-semibold leading-relaxed">
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight">Welcome to PawPal</h1>
+                <p className="text-slate-600 text-sm leading-relaxed">
                   The smartest companion for your furry family
                 </p>
               </div>
@@ -184,15 +184,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <button
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl border-2 border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 hover:shadow-lg transition-all active:scale-[0.98] font-bold text-slate-800 text-lg disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98] font-semibold text-slate-700 disabled:opacity-50"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={22} /> : (
+                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
-                      <svg className="w-6 h-6" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -206,11 +206,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <button
                   onClick={handleAppleLogin}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-black text-white hover:bg-slate-800 hover:shadow-lg transition-all active:scale-[0.98] font-bold text-lg disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-black text-white hover:bg-slate-900 transition-all active:scale-[0.98] font-semibold disabled:opacity-50"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={22} /> : (
+                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
-                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74 1.18 0 2.45-1.15 4.09-.6 1.12.39 2.21 1.25 2.72 2.04-2.82 1.62-2.12 5.51.68 6.75-.48 1.4-1.12 2.76-2.57 4.04zM13.03 5.48c-.66 1.76-2.91 3.12-4.43 2.84-.33-1.74 1.18-3.64 2.89-4.32 1.35-.58 3.13.06 1.54 1.48z" />
                       </svg>
                       Continue with Apple
@@ -219,36 +219,36 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </button>
               </div>
 
-              <div className="relative py-2">
+              <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t-2 border-slate-200"></div>
+                  <div className="w-full border-t border-slate-200"></div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-5 py-1 bg-white text-slate-600 font-bold">Or continue with</span>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-4 bg-white text-slate-500 font-medium">Or continue with</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setView('phone')}
-                  className="p-5 rounded-2xl bg-slate-100 hover:bg-slate-200 hover:shadow-md text-slate-800 font-bold transition-all active:scale-[0.98] flex flex-col items-center gap-3"
+                  className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold transition-colors flex flex-col items-center gap-2"
                 >
-                  <Phone size={24} className="text-slate-600" />
-                  <span className="text-base">Phone</span>
+                  <Phone size={20} className="text-slate-500" />
+                  <span className="text-sm">Phone</span>
                 </button>
                 <button
                   onClick={() => setView('email')}
-                  className="p-5 rounded-2xl bg-slate-100 hover:bg-slate-200 hover:shadow-md text-slate-800 font-bold transition-all active:scale-[0.98] flex flex-col items-center gap-3"
+                  className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold transition-colors flex flex-col items-center gap-2"
                 >
-                  <Mail size={24} className="text-slate-600" />
-                  <span className="text-base">Email</span>
+                  <Mail size={20} className="text-slate-500" />
+                  <span className="text-sm">Email</span>
                 </button>
               </div>
 
-              <div className="pt-4 text-center border-t-2 border-slate-200">
+              <div className="pt-4 text-center border-t border-slate-100">
                 <button
                   onClick={handleDemoLogin}
-                  className="text-orange-600 font-black text-base hover:text-orange-700 hover:underline transition-all"
+                  className="text-orange-600 font-bold text-sm hover:text-orange-700 transition-colors"
                 >
                   Try Demo Account
                 </button>
