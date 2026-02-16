@@ -1,67 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Layout, 
-  Dog, 
-  MessageSquare, 
-  Activity, 
-  Plus, 
-  Bell, 
-  Users, 
-  Search, 
-  X, 
-  TrendingUp, 
-  Clock, 
-  Heart, 
-  ChevronRight, 
-  ChevronLeft, 
-  Camera, 
-  Globe, 
-  Weight, 
-  Calendar, 
-  Eye, 
-  Edit3, 
-  QrCode, 
-  Check, 
-  Move, 
-  ZoomIn, 
-  CheckCircle, 
-  RotateCcw, 
-  Settings, 
-  LogOut, 
-  Trash2, 
-  PauseCircle, 
-  Moon, 
-  HelpCircle, 
-  Shield, 
-  User, 
-  Lock, 
-  Crown, 
-  Sparkles, 
-  CreditCard, 
-  Star, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  ToggleLeft, 
-  ToggleRight, 
-  Sun, 
-  Monitor, 
-  AlertTriangle, 
-  MessageCircle, 
-  FileText, 
-  Menu, 
-  Image as ImageIcon, 
-  Key, 
-  Cookie, 
-  Smartphone, 
-  Loader2, 
-  EyeOff, 
-  Copy, 
-  Info, 
-  Dna, 
-  AlignLeft, 
-  CalendarDays, 
-  Zap, 
+import {
+  Layout,
+  Dog,
+  MessageSquare,
+  Activity,
+  Plus,
+  Bell,
+  Users,
+  Search,
+  X,
+  TrendingUp,
+  Clock,
+  Heart,
+  ChevronRight,
+  ChevronLeft,
+  Camera,
+  Globe,
+  Weight,
+  Calendar,
+  Eye,
+  Edit3,
+  QrCode,
+  Check,
+  Move,
+  ZoomIn,
+  CheckCircle,
+  RotateCcw,
+  Settings,
+  LogOut,
+  Trash2,
+  PauseCircle,
+  Moon,
+  HelpCircle,
+  Shield,
+  User,
+  Lock,
+  Crown,
+  Sparkles,
+  CreditCard,
+  Star,
+  Mail,
+  Phone,
+  MapPin,
+  ToggleLeft,
+  ToggleRight,
+  Sun,
+  Monitor,
+  AlertTriangle,
+  MessageCircle,
+  FileText,
+  Menu,
+  Image as ImageIcon,
+  Key,
+  Cookie,
+  Smartphone,
+  Loader2,
+  EyeOff,
+  Copy,
+  Info,
+  Dna,
+  AlignLeft,
+  CalendarDays,
+  Zap,
   Download,
   Stethoscope,
   Syringe,
@@ -76,6 +76,7 @@ import AIAdvisor from './components/AIAdvisor';
 import Community from './components/Community';
 import Matches from './components/Matches';
 import LoginPage from './components/LoginPage';
+import { supabase } from './lib/supabase';
 
 // --- INITIAL SAMPLE DATA (For Demo User) ---
 const INITIAL_PETS: Pet[] = [
@@ -223,6 +224,31 @@ const App: React.FC = () => {
      }
   ]);
   const [activeMatchId, setActiveMatchId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const email = session.user.email || '';
+        const username = session.user.user_metadata?.full_name || email.split('@')[0];
+        handleLogin('user', username, email);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const email = session.user.email || '';
+        const username = session.user.user_metadata?.full_name || email.split('@')[0];
+        handleLogin('user', username, email);
+      } else {
+        setIsAuthenticated(false);
+        setUserProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Theme Effect
   useEffect(() => {
@@ -378,9 +404,10 @@ const App: React.FC = () => {
       }
   };
 
-  const executeLogout = () => {
+  const executeLogout = async () => {
     setIsSettingsOpen(false);
     setActionModal(null);
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
     setUserProfile(null);
     setPets([]);

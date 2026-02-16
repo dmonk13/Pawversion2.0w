@@ -10,10 +10,11 @@
     "start": "serve -s dist -l $PORT"
   },
   "dependencies": {
+    "@google/genai": "latest",
+    "@supabase/supabase-js": "^2.95.3",
+    "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "lucide-react": "^0.562.0",
-    "@google/genai": "latest",
     "serve": "^14.2.1"
   },
   "devDependencies": {
