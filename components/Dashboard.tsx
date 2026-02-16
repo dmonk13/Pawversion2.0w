@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Pet, HealthLog, Task } from '../types';
-import {
-  Clock,
-  Heart,
-  ArrowRight,
-  Zap,
-  Search,
-  MapPin,
-  SlidersHorizontal,
+import { 
+  Clock, 
+  Heart, 
+  ArrowRight, 
+  Zap, 
+  Search, 
+  MapPin, 
+  SlidersHorizontal, 
   Star,
   PlusCircle,
   Repeat,
@@ -31,8 +31,7 @@ import {
   Share2,
   Trash2
 } from 'lucide-react';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+import { GoogleGenAI } from "@google/genai";
 
 interface Props {
   pets: Pet[];
@@ -405,51 +404,21 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         if (!image) return;
         setLoading(true);
         try {
-            if (!GEMINI_API_KEY) {
-                setResult("API key not found. Please add VITE_GEMINI_API_KEY to your .env file.");
-                setLoading(false);
-                return;
-            }
-
-            const base64Data = image.split(',')[1] || image;
-
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                {
-                                    inlineData: {
-                                        mimeType: 'image/jpeg',
-                                        data: base64Data
-                                    }
-                                },
-                                {
-                                    text: "Identify the dog breed in this image. Provide the breed name and 3 short bullet points about their typical personality traits. If it's not a dog, strictly say 'This doesn't look like a dog'."
-                                }
-                            ]
-                        }]
-                    }),
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("API Error Response:", errorData);
-                throw new Error(errorData.error?.message || 'Failed to analyze image');
-            }
-
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't identify the breed. Try a clearer photo!";
-            setResult(text);
-        } catch (e: any) {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const base64Data = image.split(',')[1];
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: [{
+                    parts: [
+                        { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
+                        { text: "Identify the dog breed in this image. Provide the breed name and 3 short bullet points about their typical personality traits. If it's not a dog, strictly say 'This doesn't look like a dog'." }
+                    ]
+                }],
+            });
+            setResult(response.text || "I couldn't identify the breed. Try a clearer photo!");
+        } catch (e) {
             console.error("AI Scan Error:", e);
-            setResult(`Error: ${e.message || 'Failed to analyze image. Please ensure your API key is valid and try again.'}`);
+            setResult("Failed to analyze image. Please ensure your API key is valid and try again.");
         } finally {
             setLoading(false);
         }

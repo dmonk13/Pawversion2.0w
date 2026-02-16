@@ -1,17 +1,16 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Pet, ChatMessage } from '../types';
 import { Send, Sparkles, User, Brain, Heart, Info, Camera, Bot } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 interface Props {
   pets: Pet[];
 }
 
-// Replace this with your actual Render URL after deployment
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-
 const AIAdvisor: React.FC<Props> = ({ pets }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', content: "Woof! I'm your PawPal AI Expert. I have all the records for Luna and Oliver ready. How can I assist you with their care today?" }
+    { role: 'model', content: "Woof! I'm your PawPal AI Expert. I have all the records for your pets ready. How can I assist you with their care today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,8 +18,8 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
 
   const suggestedTopics = [
     { label: 'Nutrition', icon: <Heart size={14} />, prompt: "What's the best diet for my pets?" },
-    { label: 'Health Check', icon: <Info size={14} />, prompt: "Check Luna's latest vaccination status." },
-    { label: 'Training', icon: <Brain size={14} />, prompt: "How do I teach Oliver new tricks?" }
+    { label: 'Health Check', icon: <Info size={14} />, prompt: "Based on their age, what health checks do my pets need?" },
+    { label: 'Training', icon: <Brain size={14} />, prompt: "Give me a fun training tip." }
   ];
 
   useEffect(() => {
@@ -34,29 +33,44 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     if (!textToSend.trim() || isLoading) return;
 
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
+    // Optimistically add user message
+    const newMessages = [...messages, { role: 'user', content: textToSend } as ChatMessage];
+    setMessages(newMessages);
     setIsLoading(true);
 
     try {
-      // Call the backend API instead of Google SDK directly
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: textToSend }],
-          pets: pets
-        }),
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      // Filter history to ensure it complies with API requirements (starts with user)
+      // We skip the very first welcome message from the model context if it's purely UI
+      // We map the messages state to the format required by the API.
+      const historyForApi = newMessages
+        .filter((_, index) => index > 0) // Skip initial welcome message
+        .map(m => ({
+          role: m.role,
+          parts: [{ text: m.content }]
+        }));
+
+      const systemInstruction = `You are PawPal AI, a veteran veterinarian and pet behavioral expert. 
+      You have access to the user's pets: ${pets.map(p => `${p.name} (${p.breed}, ${p.age}yrs)`).join(', ')}.
+      Keep responses concise, warm, and professional. Always use the pet names when relevant. 
+      If a medical emergency is implied, urgently advise visiting a real vet.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: historyForApi,
+        config: { 
+          systemInstruction,
+          temperature: 0.7 
+        }
       });
 
-      if (!response.ok) throw new Error('Backend request failed');
+      const responseText = response.text || "I'm having trouble thinking right now. Please try again.";
+      setMessages(prev => [...prev, { role: 'model', content: responseText }]);
 
-      const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', content: data.text || "I'm processing that. One moment!" }]);
     } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: "My connection to the PawPal servers is a bit fuzzy. Let's try again!" }]);
+      console.error("AI Error:", error);
+      setMessages(prev => [...prev, { role: 'model', content: "I'm having trouble connecting to the service. Please check your internet connection and try again." }]);
     } finally {
       setIsLoading(false);
     }

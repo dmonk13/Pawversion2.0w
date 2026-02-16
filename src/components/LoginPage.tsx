@@ -6,9 +6,6 @@ interface LoginPageProps {
   onLogin: (type: 'demo' | 'user', username?: string, identifier?: string) => void;
 }
 
-// Replace this with your actual Render URL after deployment
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-
 const BACKGROUND_IMAGES = [
   "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=2069&auto=format&fit=crop", // Dogs
   "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop", // Cat
@@ -19,7 +16,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   // Navigation State
   const [view, setView] = useState<'menu' | 'email' | 'phone' | 'google_sim' | 'apple_sim' | 'forgot_password'>('menu');
   const [isLoading, setIsLoading] = useState(false);
-  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('online'); // Default to online for serverless
   const [currentSlide, setCurrentSlide] = useState(0);
   
   // Real Auth Configuration State
@@ -48,19 +45,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       setCurrentSlide((prev) => (prev + 1) % BACKGROUND_IMAGES.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/`);
-        if (res.ok) setServerStatus('online');
-        else setServerStatus('offline');
-      } catch (e) {
-        setServerStatus('offline');
-      }
-    };
-    checkServer();
   }, []);
 
   // Initialize Real Google Sign In if Client ID is present
@@ -136,8 +120,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       localStorage.setItem('google_client_id', cleanedId);
       setGoogleClientId(cleanedId);
       setIsConfigOpen(false);
-      // Removed window.location.reload() to prevent 404s in some environments
-      // The useEffect [googleClientId] will handle re-initialization
   };
 
   const handleFinalLogin = (method: 'demo' | 'user', username: string, identifier?: string) => {
@@ -269,13 +251,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
       {/* --- SERVER STATUS & CONFIG --- */}
       <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20">
-         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border transition-colors duration-500 ${
-           serverStatus === 'online' ? 'bg-green-500/20 border-green-500/30 text-green-300' : 
-           serverStatus === 'offline' ? 'bg-red-500/20 border-red-500/30 text-red-300' : 'bg-white/10 border-white/20 text-white/50'
-         }`}>
-            {serverStatus === 'online' ? <Wifi size={10} /> : <WifiOff size={10} />}
+         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border transition-colors duration-500 bg-green-500/20 border-green-500/30 text-green-300`}>
+            <Wifi size={10} />
             <span className="text-[10px] font-bold uppercase tracking-wider">
-               {serverStatus === 'online' ? 'Online' : serverStatus === 'offline' ? 'Offline' : 'Connecting'}
+               Ready
             </span>
          </div>
          

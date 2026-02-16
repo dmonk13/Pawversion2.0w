@@ -242,23 +242,23 @@ const PetProfiles: React.FC<Props> = ({ pets, onAddPet, initialSelectedId, onCle
              
              {isMenuOpen && (
                <div className="absolute right-0 top-14 w-48 bg-white rounded-2xl shadow-xl py-2 animate-in fade-in zoom-in-95 duration-200 border border-slate-100 z-50 overflow-hidden">
-                 <button
-                    onClick={(e) => { e.stopPropagation(); handleEdit(); }}
+                 <button 
+                    onClick={handleEdit}
                     type="button"
                     className="w-full px-4 py-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 active:bg-slate-100 transition-colors"
                  >
                     <Edit2 size={16} /> Edit Profile
                  </button>
-                 <button
-                    onClick={(e) => { e.stopPropagation(); handleShare(); }}
+                 <button 
+                    onClick={handleShare}
                     type="button"
                     className="w-full px-4 py-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 active:bg-slate-100 transition-colors"
                  >
                     <Share2 size={16} /> Share
                  </button>
                  <div className="h-px bg-slate-100 my-1"></div>
-                 <button
-                    onClick={(e) => { e.stopPropagation(); handleRemove(); }}
+                 <button 
+                    onClick={handleRemove}
                     type="button"
                     className="w-full px-4 py-3 text-left text-sm font-bold text-red-500 hover:bg-red-50 flex items-center gap-2 active:bg-red-50 transition-colors"
                  >

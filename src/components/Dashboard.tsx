@@ -1,14 +1,14 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Pet, HealthLog, Task } from '../types';
-import {
-  Clock,
-  Heart,
-  ArrowRight,
-  Zap,
-  Search,
-  MapPin,
-  SlidersHorizontal,
+import { 
+  Clock, 
+  Heart, 
+  ArrowRight, 
+  Zap, 
+  Search, 
+  MapPin, 
+  SlidersHorizontal, 
   Star,
   PlusCircle,
   Repeat,
@@ -24,9 +24,15 @@ import {
   Users,
   CalendarPlus,
   Camera,
-  ScanLine
+  ScanLine,
+  Loader2,
+  Sparkles,
+  MoreVertical,
+  Edit2,
+  Share2,
+  Trash2
 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
 interface Props {
   pets: Pet[];
@@ -36,6 +42,8 @@ interface Props {
   onAddPet: () => void;
   onAddTask: (task: Task) => void;
   onToggleTask: (taskId: string) => void;
+  onEditPet: (pet: Pet) => void;
+  onRemovePet: (id: string) => void;
   onNavigate: (tab: any) => void;
   userName?: string;
 }
@@ -53,23 +61,19 @@ const FACTS = [
   "Tail wagging has its own language: right for happy, left for nervous."
 ];
 
-// Helper to generate Google Calendar Link
 const generateGoogleCalendarUrl = (task: Task) => {
-    // Format start time
     const startDateTime = new Date(`${task.date}T${task.time}`);
-    const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); // Default 30 min duration
-    
+    const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); 
     const format = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, '');
-    
     const start = format(startDateTime);
     const end = format(endDateTime);
-    
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task.title)}&dates=${start}/${end}&details=${encodeURIComponent(task.type)}&sf=true&output=xml`;
 };
 
-const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, onAddTask, onToggleTask, onNavigate, userName }) => {
+const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, onAddTask, onToggleTask, onEditPet, onRemovePet, onNavigate, userName }) => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isBreedModalOpen, setIsBreedModalOpen] = useState(false);
+  const [isBreedScannerOpen, setIsBreedScannerOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [petFact, setPetFact] = useState('');
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
@@ -80,32 +84,49 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
-      // Sort by completion (uncompleted first)
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      // Then by date/time
       return new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime();
     });
   }, [tasks]);
 
   const completionPercentage = useMemo(() => {
-    // Check for tasks scheduled today
     const today = new Date().toISOString().split('T')[0];
     const todayTasks = tasks.filter(t => t.date === today);
-    
-    if (todayTasks.length === 0) return 100; // All good if no tasks
+    if (todayTasks.length === 0) return 100;
     const completed = todayTasks.filter(t => t.completed).length;
     return Math.round((completed / todayTasks.length) * 100);
   }, [tasks]);
 
   const getPetImage = (petId: string) => pets.find(p => p.id === petId)?.image;
 
-  // SVG Progress calculation
-  const radius = 24;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (completionPercentage / 100) * circumference;
-
   const handleAddToCalendar = (task: Task) => {
       window.open(generateGoogleCalendarUrl(task), '_blank');
+  };
+
+  const handleSharePet = async (e: React.MouseEvent, pet: Pet) => {
+      e.stopPropagation();
+      setOpenMenuId(null);
+      const shareData = {
+          title: `PawPal: ${pet.name}`,
+          text: `Meet ${pet.name}, my ${pet.breed}! 🐾\nAge: ${pet.age} yrs\nWeight: ${pet.weight}kg`,
+          url: window.location.href
+      };
+      try {
+          if (navigator.share) {
+            await navigator.share(shareData);
+          } else {
+             await navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}`);
+             alert("Pet profile info copied to clipboard!");
+          }
+      } catch (err) { console.error(err); }
+  };
+
+  const handleDeletePet = (e: React.MouseEvent, pet: Pet) => {
+      e.stopPropagation();
+      setOpenMenuId(null);
+      if (window.confirm(`Are you sure you want to remove ${pet.name}? All health logs will be kept but the profile will be deleted.`)) {
+          onRemovePet(pet.id);
+      }
   };
 
   return (
@@ -113,7 +134,6 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
       
       {/* Top Grid: Welcome & Fact */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Welcome Header & Progress */}
         <section className="md:col-span-2 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">
@@ -146,7 +166,6 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
           </div>
         </section>
 
-        {/* Daily Fact Card */}
         <div className="md:col-span-1 bg-gradient-to-r from-violet-500 to-fuchsia-500 p-6 rounded-[2rem] shadow-lg shadow-violet-500/20 text-white relative overflow-hidden group flex flex-col justify-center">
            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-xl"></div>
            <div className="relative z-10">
@@ -161,60 +180,47 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
         </div>
       </div>
 
-      {/* --- BREED SCANNER UI START --- */}
-      {/* Moved here and styled with Dark Slate for maximum visibility */}
-      <section 
-          onClick={() => setIsBreedModalOpen(true)}
-          className="w-full bg-slate-900 text-white p-6 rounded-[2rem] shadow-xl shadow-slate-900/20 flex items-center justify-between cursor-pointer group hover:scale-[1.01] transition-all relative overflow-hidden active:scale-[0.98]"
-      >
-          {/* Background decorations */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-orange-500/10 rounded-full -ml-10 -mb-10 blur-xl"></div>
-          
+      {/* NEW: Breed Scanner Sub-Grid Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <button 
+          onClick={() => setIsBreedScannerOpen(true)}
+          className="bg-slate-900 dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-xl shadow-slate-900/10 flex items-center justify-between group active:scale-[0.99] transition-all hover:ring-4 hover:ring-orange-500/20 overflow-hidden relative"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
           <div className="flex items-center gap-5 relative z-10">
-              <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-inner border border-white/10 group-hover:bg-orange-500 transition-colors duration-500">
-                  <ScanLine size={32} />
-              </div>
-              <div className="text-left">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-black text-white text-xl">Breed Scanner</h4>
-                    <span className="bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm animate-pulse">New</span>
-                  </div>
-                  <p className="text-slate-300 text-sm font-medium">Take a photo to identify breed & traits.</p>
-              </div>
+             <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform backdrop-blur-md border border-white/5">
+                <ScanLine size={28} />
+             </div>
+             <div className="text-left">
+                <h4 className="font-black text-white text-xl">Breed Scanner</h4>
+                <p className="text-sm text-slate-400 font-medium mt-0.5">Identify breed with AI vision.</p>
+             </div>
           </div>
-          
-          <div className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center shadow-md relative z-10 group-hover:scale-110 transition-transform">
-              <Camera size={24} />
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-orange-500 transition-all">
+             <Camera size={20} />
           </div>
-      </section>
-      {/* --- BREED SCANNER UI END --- */}
+        </button>
 
-      {/* Discover Banner */}
-      <section>
         <button 
           onClick={() => onNavigate('community')}
-          className="w-full bg-white border border-slate-100 p-6 rounded-[2rem] shadow-xl shadow-slate-200/40 flex items-center justify-between group active:scale-[0.99] transition-all hover:border-orange-200 hover:shadow-orange-200/20"
+          className="bg-white border border-slate-100 p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/40 flex items-center justify-between group active:scale-[0.99] transition-all hover:border-orange-200"
         >
           <div className="flex items-center gap-5">
-             <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+             <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
                 <Users size={28} />
              </div>
              <div className="text-left">
-                <h4 className="font-black text-slate-800 text-xl">Connect with Community</h4>
-                <p className="text-sm text-slate-400 font-medium mt-0.5">Find playdates, advice & friends nearby.</p>
+                <h4 className="font-black text-slate-800 text-xl">Community</h4>
+                <p className="text-sm text-slate-400 font-medium mt-0.5">Find playdates & friends.</p>
              </div>
           </div>
-          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:text-orange-500 group-hover:translate-x-2 transition-all">
-             <ArrowRight size={24} />
+          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all">
+             <ArrowRight size={20} />
           </div>
         </button>
-      </section>
+      </div>
 
-      {/* Main Content Grid: Family (Left) + Tasks/AI (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-        
-        {/* Left Col: Family */}
         <section className="lg:col-span-2 space-y-4">
           <div className="flex justify-between items-end px-1">
             <h3 className="font-bold text-xl text-slate-800">My Family</h3>
@@ -222,18 +228,34 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
               View All <ArrowRight size={14} />
             </button>
           </div>
-          
-          {/* Responsive Grid for Pets */}
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:flex xl:overflow-x-auto">
             {pets.map(pet => (
-              <button 
+              <div 
                 key={pet.id} 
                 onClick={() => onSelectPet(pet.id)}
-                className="flex-shrink-0 w-48 md:w-auto xl:w-56 bg-white border border-slate-100 rounded-[2rem] p-3 shadow-xl shadow-slate-200/50 hover:scale-[1.02] transition-transform text-left active:scale-95 flex flex-col"
+                className="flex-shrink-0 w-48 md:w-auto xl:w-56 bg-white border border-slate-100 rounded-[2rem] p-3 shadow-xl shadow-slate-200/50 hover:scale-[1.02] transition-transform text-left active:scale-95 flex flex-col relative group"
               >
+                {/* Pet Tile Menu Button */}
+                <div className="absolute top-5 right-5 z-20">
+                   <button 
+                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === pet.id ? null : pet.id); }}
+                    className="w-8 h-8 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-400 hover:text-orange-500 shadow-sm border border-slate-100"
+                   >
+                     <MoreVertical size={16} />
+                   </button>
+                   {openMenuId === pet.id && (
+                     <div className="absolute right-0 top-10 w-40 bg-white rounded-2xl shadow-2xl py-2 border border-slate-100 z-50 animate-in zoom-in-95 duration-200">
+                        <button onClick={(e) => { e.stopPropagation(); onEditPet(pet); setOpenMenuId(null); }} className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"><Edit2 size={14}/> Edit</button>
+                        <button onClick={(e) => handleSharePet(e, pet)} className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"><Share2 size={14}/> Share</button>
+                        <div className="h-px bg-slate-50 my-1"></div>
+                        <button onClick={(e) => handleDeletePet(e, pet)} className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2"><Trash2 size={14}/> Delete</button>
+                     </div>
+                   )}
+                </div>
+
                 <div className="relative mb-3 w-full aspect-square">
                   <img src={pet.image} alt={pet.name} className="w-full h-full object-cover rounded-[1.8rem]" />
-                  <div className="absolute top-3 right-3 px-2 py-1 bg-white/90 backdrop-blur-md rounded-lg text-[9px] font-black text-slate-900 shadow-sm uppercase">
+                  <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-md rounded-lg text-[9px] font-black text-slate-900 shadow-sm uppercase">
                     {pet.breed.split(' ')[0]}
                   </div>
                 </div>
@@ -246,7 +268,7 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
                     </div>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
             <button 
               onClick={onAddPet}
@@ -260,9 +282,7 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
           </div>
         </section>
 
-        {/* Right Col: Tasks & AI */}
         <div className="space-y-8">
-            {/* Task List */}
             <section className="space-y-4">
                 <div className="flex justify-between items-center px-1">
                 <h3 className="font-bold text-xl text-slate-800">Upcoming Tasks</h3>
@@ -273,21 +293,17 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
                     <PlusCircle size={14} /> New
                 </button>
                 </div>
-                
                 <div className="space-y-3">
                 {sortedTasks.length > 0 ? (
-                    sortedTasks.slice(0, 3).map(task => { // Limit to 3 on dashboard
+                    sortedTasks.slice(0, 3).map(task => {
                     const petImg = getPetImage(task.petId);
                     const petName = pets.find(p => p.id === task.petId)?.name || 'Pet';
-                    
                     let TypeIcon = Zap;
                     let colorClass = 'text-orange-500 bg-orange-50';
-                    
                     if (task.type === 'Feeding') { TypeIcon = Utensils; colorClass = 'text-indigo-500 bg-indigo-50'; }
                     else if (task.type === 'Health') { TypeIcon = Heart; colorClass = 'text-pink-500 bg-pink-50'; }
                     else if (task.type === 'Grooming') { TypeIcon = Scissors; colorClass = 'text-purple-500 bg-purple-50'; }
                     else if (task.type === 'Activity') { TypeIcon = Activity; colorClass = 'text-green-500 bg-green-50'; }
-
                     return (
                         <div 
                         key={task.id} 
@@ -307,12 +323,10 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
                             <h4 className={`font-bold text-slate-800 text-sm truncate ${task.completed ? 'line-through text-slate-400' : ''}`}>{petName}: {task.title}</h4>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{task.time} • {task.type}</p>
                         </div>
-                        
                         <div className="flex gap-2">
                              <button
                                onClick={() => handleAddToCalendar(task)}
                                className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
-                               title="Add to Google Calendar"
                              >
                                 <CalendarPlus size={16} />
                              </button>
@@ -334,8 +348,6 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
                 )}
                 </div>
             </section>
-
-            {/* Featured AI Promotion */}
             <section className="bg-gradient-to-br from-slate-800 to-slate-950 rounded-[2.5rem] p-6 text-white relative overflow-hidden shadow-2xl">
                 <div className="relative z-10 space-y-3">
                 <div className="inline-flex items-center gap-2 bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-orange-500/30">
@@ -355,7 +367,7 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
         </div>
       </div>
 
-      {/* Add Task Modal */}
+      {/* Modals */}
       {isTaskModalOpen && (
         <AddTaskModal 
           pets={pets} 
@@ -363,15 +375,114 @@ const Dashboard: React.FC<Props> = ({ pets, logs, tasks, onSelectPet, onAddPet, 
           onSubmit={(task) => { onAddTask(task); setIsTaskModalOpen(false); }} 
         />
       )}
-
-      {/* Breed Scanner Modal */}
-      {/* --- BREED SCANNER UI MODAL START --- */}
-      {isBreedModalOpen && (
-        <BreedScannerModal onClose={() => setIsBreedModalOpen(false)} />
+      {isBreedScannerOpen && (
+        <BreedScannerModal onClose={() => setIsBreedScannerOpen(false)} />
       )}
-      {/* --- BREED SCANNER UI MODAL END --- */}
     </div>
   );
+};
+
+// Breed Scanner Modal Component
+const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
+    const [image, setImage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setImage(reader.result as string);
+                setResult(null);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleScan = async () => {
+        if (!image) return;
+        setLoading(true);
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            // Clean base64 string
+            const base64Data = image.split(',')[1];
+            
+            const response = await ai.models.generateContent({
+                model: 'gemini-3-flash-preview',
+                contents: [{
+                    parts: [
+                        { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
+                        { text: "Identify the dog breed in this image. Provide the breed name and 3 short bullet points about their typical personality traits. If it's not a dog, strictly say 'This doesn't look like a dog'." }
+                    ]
+                }],
+            });
+            setResult(response.text || "I couldn't identify the breed. Try a clearer photo!");
+        } catch (e) {
+            console.error("AI Scan Error:", e);
+            setResult("Failed to analyze image. Please ensure your API key is valid and try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-300">
+                <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                    <X size={20} />
+                </button>
+                <div className="text-center mb-8">
+                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-orange-500 border border-orange-100 dark:border-orange-500/20">
+                        <ScanLine size={40} />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">Breed Scanner</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">AI-powered dog identification</p>
+                </div>
+
+                <div className="space-y-6">
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full aspect-square bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:border-orange-400 transition-all overflow-hidden relative group"
+                    >
+                        {image ? (
+                            <img src={image} className="w-full h-full object-cover" alt="Preview" />
+                        ) : (
+                            <div className="flex flex-col items-center text-slate-400 group-hover:text-orange-500 transition-colors">
+                                <Camera size={40} strokeWidth={1.5} />
+                                <span className="text-xs font-bold uppercase tracking-widest mt-2">Upload Photo</span>
+                            </div>
+                        )}
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+                    </div>
+
+                    {result ? (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-500/20 text-blue-900 dark:text-blue-100 text-sm leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto no-scrollbar">
+                           <h4 className="font-black text-blue-600 dark:text-blue-400 uppercase text-[10px] tracking-widest mb-2 flex items-center gap-2">
+                               <Sparkles size={12} fill="currentColor" /> Result
+                           </h4>
+                           {result}
+                           <button 
+                             onClick={() => { setImage(null); setResult(null); }}
+                             className="w-full mt-4 py-2 text-xs font-black uppercase tracking-widest text-blue-500 border border-blue-200 rounded-lg bg-white dark:bg-slate-800"
+                           >
+                             Scan Another
+                           </button>
+                        </div>
+                    ) : (
+                        <button 
+                            disabled={!image || loading}
+                            onClick={handleScan}
+                            className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Analyze Breed'}
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () => void, onSubmit: (task: Task) => void }) => {
@@ -386,7 +497,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
     completed: false
   });
   const [addToGCal, setAddToGCal] = useState(false);
-
   const isValid = formData.title && formData.petId;
 
   return (
@@ -396,9 +506,7 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
           <h2 className="text-2xl font-black text-slate-800">New Reminder</h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors"><X size={24} /></button>
         </div>
-
         <div className="space-y-6">
-          {/* Pet Selection */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">For Who?</label>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
@@ -414,8 +522,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
               ))}
             </div>
           </div>
-
-          {/* Type Selection */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Category</label>
             <div className="flex flex-wrap gap-2">
@@ -430,8 +536,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
               ))}
             </div>
           </div>
-
-          {/* Inputs */}
           <div className="space-y-4">
              <input 
               type="text" 
@@ -440,7 +544,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
               onChange={e => setFormData({...formData, title: e.target.value})}
               className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none"
              />
-             
              <div className="grid grid-cols-2 gap-4">
                 <div className="relative">
                    <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -462,8 +565,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
                 </div>
              </div>
           </div>
-
-          {/* Recurrence */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col gap-4">
             <div className="flex justify-between items-center">
                <div className="flex items-center gap-3">
@@ -482,7 +583,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${formData.isRecurring ? 'left-6' : 'left-1'}`}></div>
                </button>
             </div>
-
             {formData.isRecurring && (
                <div className="flex gap-2 animate-in slide-in-from-top-2 duration-200">
                   {['Daily', 'Weekly', 'Monthly'].map(freq => (
@@ -497,8 +597,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
                </div>
             )}
           </div>
-
-          {/* Google Calendar Toggle */}
           <div 
             onClick={() => setAddToGCal(!addToGCal)}
             className={`p-4 rounded-2xl border transition-all flex items-center gap-3 cursor-pointer ${addToGCal ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100 hover:border-slate-200'}`}
@@ -509,7 +607,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
              <span className={`text-xs font-bold ${addToGCal ? 'text-indigo-700' : 'text-slate-500'}`}>Add to Google Calendar</span>
              <CalendarPlus size={16} className={`ml-auto ${addToGCal ? 'text-indigo-500' : 'text-slate-400'}`} />
           </div>
-
           <button 
             disabled={!isValid}
             onClick={() => {
@@ -530,122 +627,6 @@ const AddTaskModal = ({ pets, onClose, onSubmit }: { pets: Pet[], onClose: () =>
       </div>
     </div>
   );
-};
-
-const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
-    const [image, setImage] = useState<string | null>(null);
-    const [result, setResult] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImage(reader.result as string);
-                setResult(null); // Reset result on new image
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleAnalyze = async () => {
-        if (!image) return;
-        setLoading(true);
-        try {
-            const apiKey = (process.env as any).API_KEY || (process.env as any).GEMINI_API_KEY;
-
-            if (!apiKey) {
-                setResult("API key not configured. Please set your GEMINI_API_KEY in the environment variables.");
-                setLoading(false);
-                return;
-            }
-
-            const ai = new GoogleGenAI({ apiKey });
-            const base64Data = image.split(',')[1] || image;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash-exp',
-                contents: [{
-                    parts: [
-                        { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
-                        { text: "Identify the dog breed in this image. Provide the breed name and 3 short bullet points about their typical personality traits. If it's not a dog, strictly say 'This doesn't look like a dog'." }
-                    ]
-                }],
-            });
-
-            setResult(response.text || "I couldn't identify the breed. Try a clearer photo!");
-        } catch (error) {
-            console.error("Breed Scanner Error:", error);
-            setResult("Failed to analyze image. Please ensure your API key is valid and try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-300 shadow-2xl relative">
-                <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
-                    <X size={20} />
-                </button>
-
-                <div className="text-center mb-6">
-                    <h2 className="text-2xl font-black text-slate-800">Breed Scanner</h2>
-                    <p className="text-sm text-slate-400 font-medium">Snap a photo to identify breed</p>
-                </div>
-
-                <div className="space-y-6">
-                    <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full aspect-square bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition-colors relative overflow-hidden group"
-                    >
-                        {image ? (
-                            <img src={image} alt="Preview" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="text-center p-6">
-                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm mx-auto mb-3 group-hover:text-blue-500 transition-colors">
-                                    <Camera size={32} />
-                                </div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tap to Upload</p>
-                            </div>
-                        )}
-                        <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
-                    </div>
-
-                    {result ? (
-                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 animate-in fade-in slide-in-from-bottom-2">
-                            <h3 className="font-black text-blue-800 text-lg mb-2 flex items-center gap-2">
-                                <ScanLine size={18} /> Analysis Result
-                            </h3>
-                            <div className="text-sm text-blue-700/80 leading-relaxed space-y-2 whitespace-pre-wrap">
-                                {result}
-                            </div>
-                            <button 
-                                onClick={() => { setImage(null); setResult(null); }}
-                                className="mt-4 w-full py-3 bg-white text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest shadow-sm hover:bg-blue-50 transition-colors"
-                            >
-                                Scan Another
-                            </button>
-                        </div>
-                    ) : (
-                        <button 
-                            onClick={handleAnalyze}
-                            disabled={!image || loading}
-                            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-lg shadow-slate-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <>Analyzing...</>
-                            ) : (
-                                <>Analyze Breed <Zap size={18} fill="currentColor" /></>
-                            )}
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
 };
 
 export default Dashboard;
