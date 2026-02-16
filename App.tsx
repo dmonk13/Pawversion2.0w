@@ -696,8 +696,8 @@ const App: React.FC = () => {
 
       {/* Settings Overlay */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}>
-          <div className="absolute top-0 right-0 w-[85%] md:w-96 h-full bg-white dark:bg-slate-900 animate-in slide-in-from-right duration-300 flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md" onClick={() => setIsSettingsOpen(false)}>
+          <div className="absolute top-0 right-0 w-[85%] md:w-[420px] h-full bg-gradient-to-br from-white via-slate-50/80 to-slate-100/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 animate-in slide-in-from-right duration-300 flex flex-col shadow-[0_0_60px_rgba(0,0,0,0.3),0_0_100px_rgba(0,0,0,0.1)] border-l border-slate-200/60 dark:border-slate-700/40" onClick={e => e.stopPropagation()}>
              <SettingsSidebar 
                 onClose={() => setIsSettingsOpen(false)} 
                 onLogout={() => setActionModal({ type: 'logout', isOpen: true })}
@@ -851,11 +851,12 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
   };
 
   const Header = ({ title, onBack }: any) => (
-    <div className="flex items-center gap-4 mb-6 sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-10 py-2 border-b border-slate-50 dark:border-slate-800">
-      <button onClick={onBack} className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-        <ChevronLeft size={20} />
+    <div className="flex items-center gap-4 mb-6 sticky top-0 bg-gradient-to-b from-white via-white/98 to-white/95 dark:from-slate-900 dark:via-slate-900/98 dark:to-slate-900/95 backdrop-blur-md z-10 py-2 border-b border-slate-200/60 dark:border-slate-700/40 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+      <button onClick={onBack} className="relative w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.1)] group">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent dark:from-white/5 rounded-2xl" />
+        <ChevronLeft size={20} className="relative z-10 group-hover:-translate-x-0.5 transition-transform" />
       </button>
-      <h2 className="text-lg font-black text-slate-800 dark:text-white">{title}</h2>
+      <h2 className="text-lg font-black text-slate-800 dark:text-white drop-shadow-sm">{title}</h2>
     </div>
   );
 
@@ -1048,42 +1049,52 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
       default: return (
         <div className="animate-in slide-in-from-left duration-300 h-full flex flex-col">
           <div className="flex justify-between items-center mb-8 shrink-0">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Settings</h2>
-            <button onClick={onClose} className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><X size={20}/></button>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-sm">Settings</h2>
+            <button onClick={onClose} className="relative w-11 h-11 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all duration-300 hover:scale-110 hover:rotate-90 shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] active:scale-95 group">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent dark:from-white/5 rounded-2xl" />
+              <X size={20} className="relative z-10"/>
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-2">
               {userPlan === 'Free' && (
-                 <div className="p-1 rounded-[2rem] bg-gradient-to-br from-orange-400 via-pink-500 to-purple-500 shadow-xl shadow-orange-500/20 group cursor-pointer active:scale-[0.98] transition-all" onClick={onOpenPro}>
-                    <div className="bg-white dark:bg-slate-900 rounded-[1.8rem] p-5 relative overflow-hidden">
+                 <div className="relative p-1 rounded-[2rem] bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-[0_12px_40px_rgba(251,146,60,0.4),0_4px_16px_rgba(236,72,153,0.3)] group cursor-pointer active:scale-[0.97] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_16px_50px_rgba(251,146,60,0.5),0_6px_20px_rgba(236,72,153,0.4)] overflow-hidden" onClick={onOpenPro}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="relative bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-900/80 rounded-[1.8rem] p-5 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-pink-500/10 to-purple-500/10 dark:from-orange-500/20 dark:via-pink-500/20 dark:to-purple-500/20" />
                         <div className="flex items-center gap-4 relative z-10">
-                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white shadow-lg">
-                              <Crown size={24} fill="currentColor" />
+                           <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl blur-md opacity-60 group-hover:opacity-80 transition-opacity" />
+                              <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 flex items-center justify-center text-white shadow-[0_8px_24px_rgba(251,146,60,0.4),inset_0_2px_0_rgba(255,255,255,0.3)]">
+                                 <Crown size={26} fill="currentColor" className="drop-shadow-sm" />
+                              </div>
                            </div>
                            <div className="flex-1">
-                              <h3 className="font-black text-lg text-slate-900 dark:text-white">Upgrade to Pro</h3>
-                              <p className="text-xs font-bold text-slate-400">Unlock AI insights & more</p>
+                              <h3 className="font-black text-lg text-slate-900 dark:text-white drop-shadow-sm">Upgrade to Pro</h3>
+                              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Unlock AI insights & more</p>
                            </div>
-                           <ChevronRight size={20} className="text-slate-300" />
+                           <ChevronRight size={20} className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors group-hover:translate-x-1 transition-transform" />
                         </div>
                     </div>
                  </div>
               )}
               {MENU_GROUPS.map((group, idx) => (
                 <div key={idx}>
-                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 ml-2">{group.title}</h4>
-                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] p-2 border border-slate-100 dark:border-slate-800/50 space-y-1">
+                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 ml-2 drop-shadow-sm">{group.title}</h4>
+                   <div className="bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-800/80 dark:to-slate-800/40 rounded-[2rem] p-2.5 border border-slate-200/60 dark:border-slate-700/40 space-y-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]">
                       {group.items.map(item => (
-                         <button 
-                           key={item.id} 
+                         <button
+                           key={item.id}
                            onClick={() => setView(item.id as any)}
-                           className="w-full flex items-center gap-4 p-3 rounded-[1.5rem] hover:bg-white dark:hover:bg-slate-800 transition-all group active:scale-[0.98]"
+                           className="relative w-full flex items-center gap-4 p-4 rounded-[1.3rem] hover:bg-white dark:hover:bg-slate-800/80 transition-all duration-300 group active:scale-[0.97] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:scale-[1.01] overflow-hidden"
                          >
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
-                               {item.icon}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-100/30 to-transparent dark:via-slate-700/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                            <div className={`relative w-12 h-12 rounded-[1.1rem] flex items-center justify-center ${item.bg} ${item.color} group-hover:scale-110 transition-all duration-300 shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.3)] group-hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)]`}>
+                               <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-[1.1rem]" />
+                               <div className="relative z-10">{item.icon}</div>
                             </div>
-                            <span className="font-bold text-slate-700 dark:text-slate-200 flex-1 text-left">{item.label}</span>
-                            <div className="w-8 h-8 rounded-full bg-transparent group-hover:bg-slate-50 dark:group-hover:bg-slate-700 flex items-center justify-center transition-colors">
-                                <ChevronRight size={18} className="text-slate-300 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-white" />
+                            <span className="font-bold text-[15px] text-slate-700 dark:text-slate-200 flex-1 text-left relative z-10">{item.label}</span>
+                            <div className="relative z-10 w-8 h-8 rounded-full bg-slate-100/50 dark:bg-slate-700/30 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 flex items-center justify-center transition-all duration-300 shadow-inner">
+                                <ChevronRight size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-white transition-all duration-300 group-hover:translate-x-0.5" />
                             </div>
                          </button>
                       ))}
@@ -1091,17 +1102,20 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
                 </div>
               ))}
               <div className="space-y-3 pt-4">
-                 <button onClick={onPause} className="w-full flex items-center gap-4 p-4 rounded-[1.5rem] bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <PauseCircle size={20} />
-                    <span className="flex-1 text-left">Pause Account</span>
+                 <button onClick={onPause} className="relative w-full flex items-center gap-4 p-4 rounded-[1.3rem] bg-gradient-to-r from-slate-50 to-slate-100/80 dark:from-slate-800/50 dark:to-slate-800/30 text-slate-600 dark:text-slate-400 font-bold text-sm hover:from-slate-100 hover:to-slate-200/80 dark:hover:from-slate-800 dark:hover:to-slate-700/80 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-[0_4px_12px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] group overflow-hidden border border-slate-200/40 dark:border-slate-700/40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-200/30 to-transparent dark:via-slate-700/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <PauseCircle size={20} className="relative z-10" />
+                    <span className="flex-1 text-left relative z-10">Pause Account</span>
                  </button>
-                 <button onClick={onLogout} className="w-full flex items-center gap-4 p-4 rounded-[1.5rem] bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <LogOut size={20} />
-                    <span className="flex-1 text-left">Log Out</span>
+                 <button onClick={onLogout} className="relative w-full flex items-center gap-4 p-4 rounded-[1.3rem] bg-gradient-to-r from-slate-50 to-slate-100/80 dark:from-slate-800/50 dark:to-slate-800/30 text-slate-600 dark:text-slate-400 font-bold text-sm hover:from-slate-100 hover:to-slate-200/80 dark:hover:from-slate-800 dark:hover:to-slate-700/80 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-[0_4px_12px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] group overflow-hidden border border-slate-200/40 dark:border-slate-700/40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-200/30 to-transparent dark:via-slate-700/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <LogOut size={20} className="relative z-10" />
+                    <span className="flex-1 text-left relative z-10">Log Out</span>
                  </button>
-                 <button onClick={onDelete} className="w-full flex items-center gap-4 p-4 rounded-[1.5rem] bg-red-50 dark:bg-red-900/10 text-red-500 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors">
-                    <Trash2 size={20} />
-                    <span className="flex-1 text-left">Delete Account</span>
+                 <button onClick={onDelete} className="relative w-full flex items-center gap-4 p-4 rounded-[1.3rem] bg-gradient-to-r from-red-50 via-red-50 to-red-100/80 dark:from-red-900/20 dark:to-red-900/10 text-red-600 dark:text-red-500 font-bold text-sm hover:from-red-100 hover:to-red-200/80 dark:hover:from-red-900/30 dark:hover:to-red-900/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-[0_4px_12px_rgba(239,68,68,0.15),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_12px_rgba(239,68,68,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.25)] group overflow-hidden border border-red-200/60 dark:border-red-900/40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-100/40 to-transparent dark:via-red-900/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <Trash2 size={20} className="relative z-10" />
+                    <span className="flex-1 text-left relative z-10">Delete Account</span>
                  </button>
               </div>
               <div className="text-center pb-6">
@@ -1114,7 +1128,10 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
   }
 
   return (
-    <div className="h-full bg-white dark:bg-slate-900 flex flex-col p-6 overflow-y-auto">{renderContent()}</div>
+    <div className="h-full bg-gradient-to-br from-white via-slate-50/30 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 flex flex-col p-6 overflow-y-auto relative">
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-orange-500/5 to-transparent dark:from-orange-500/10 pointer-events-none" />
+      <div className="relative z-10">{renderContent()}</div>
+    </div>
   );
 };
 
