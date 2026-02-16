@@ -6,8 +6,7 @@ interface Props {
   pets: Pet[];
 }
 
-const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://nofthrmkxfekbypubjbe.supabase.co';
-const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY;
 
 const AIAdvisor: React.FC<Props> = ({ pets }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -34,26 +33,48 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     if (!textToSend.trim() || isLoading) return;
 
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: textToSend }]);
+    const newUserMessage = { role: 'user', content: textToSend };
+    setMessages(prev => [...prev, newUserMessage]);
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: textToSend }],
-          pets: pets
-        }),
-      });
+      const systemInstruction = `You are PawPal AI, a veteran veterinarian and pet behavioral expert.
+      You have access to the user's pets: ${pets.map(p => `${p.name} (${p.breed}, ${p.age}yrs)`).join(', ')}.
+      Keep responses concise, warm, and professional. Always use the pet names when relevant.
+      If a medical emergency is implied, urgently advise visiting a real vet.`;
+
+      const allMessages = [
+        { role: 'user', content: systemInstruction },
+        { role: 'model', content: 'Understood! I\'m PawPal AI, ready to help with your pets\' health and behavior.' },
+        ...messages,
+        newUserMessage
+      ];
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: allMessages.map(m => ({
+              role: m.role === 'model' ? 'model' : 'user',
+              parts: [{ text: m.content }]
+            })),
+            generationConfig: {
+              temperature: 0.8,
+            }
+          }),
+        }
+      );
 
       if (!response.ok) throw new Error('AI service request failed');
 
       const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', content: data.text || "I'm processing that. One moment!" }]);
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm processing that. One moment!";
+
+      setMessages(prev => [...prev, { role: 'model', content: text }]);
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'model', content: "I'm having trouble connecting right now. Let's try again!" }]);
