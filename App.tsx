@@ -556,18 +556,26 @@ const App: React.FC = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-72 flex-col border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 z-50">
+      <aside className="hidden md:flex w-72 flex-col border-r border-slate-200/60 dark:border-slate-700/40 bg-gradient-to-b from-slate-50 via-white to-slate-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 z-50 relative">
+        {/* Subtle top glow */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
+
         <div className="p-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-orange-500/20">P</div>
+            <div className="relative group">
+              <div className="absolute inset-0 bg-orange-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-300" />
+              <div className="relative w-12 h-12 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black shadow-[0_8px_30px_rgb(251,146,60,0.3),0_2px_8px_rgb(0,0,0,0.1)] transform hover:scale-105 transition-transform duration-300">
+                P
+              </div>
+            </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">PawPal</h1>
-              <span className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.2em]">Connect</span>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight drop-shadow-sm">PawPal</h1>
+              <span className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.2em] drop-shadow-sm">Connect</span>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 px-4 space-y-2.5 overflow-y-auto no-scrollbar">
           <SidebarButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Layout size={20} />} label="Dashboard" />
           <SidebarButton active={activeTab === 'pets'} onClick={() => setActiveTab('pets')} icon={<Dog size={20} />} label="My Family" />
           <SidebarButton active={activeTab === 'matches'} onClick={() => setActiveTab('matches')} icon={<MessageCircle size={20} />} label="Messages" />
@@ -575,20 +583,20 @@ const App: React.FC = () => {
           <SidebarButton active={activeTab === 'community'} onClick={() => setActiveTab('community')} icon={<Users size={20} />} label="Community" />
         </nav>
 
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-           <button onClick={() => setIsSettingsOpen(true)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">
+        <div className="p-4 border-t border-slate-200/60 dark:border-slate-700/40 bg-gradient-to-t from-slate-100/50 to-transparent dark:from-slate-950/50 dark:to-transparent">
+           <button onClick={() => setIsSettingsOpen(true)} className="w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-white dark:hover:bg-slate-800/60 transition-all duration-300 text-slate-600 dark:text-slate-400 group relative overflow-hidden hover:shadow-[0_4px_20px_rgb(0,0,0,0.05)] dark:hover:shadow-[0_4px_20px_rgb(0,0,0,0.3)] hover:scale-[1.02] border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
               {userProfile?.image ? (
-                  <img src={userProfile.image} alt="Profile" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                  <img src={userProfile.image} alt="Profile" className="w-10 h-10 rounded-xl object-cover shrink-0 shadow-md ring-2 ring-slate-200 dark:ring-slate-700" />
               ) : (
-                  <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg">
                       {userProfile?.name?.charAt(0).toUpperCase()}
                   </div>
               )}
               <div className="flex-1 text-left">
                  <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{userProfile?.name || 'User'}</p>
-                 <p className="text-xs text-slate-400">{userPlan} Plan</p>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{userPlan} Plan</p>
               </div>
-              <Settings size={16} />
+              <Settings size={16} className="group-hover:rotate-90 transition-transform duration-300" />
            </button>
         </div>
       </aside>
@@ -754,12 +762,25 @@ const App: React.FC = () => {
 };
 
 const SidebarButton = ({ active, onClick, icon, label }: any) => (
-  <button 
+  <button
     onClick={onClick}
-    className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all ${active ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+    className={`relative w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group overflow-hidden ${
+      active
+        ? 'bg-gradient-to-r from-orange-500 via-orange-500 to-orange-600 text-white shadow-[0_8px_30px_rgb(251,146,60,0.35),0_2px_10px_rgb(0,0,0,0.1),inset_0_1px_0_rgb(255,255,255,0.2)] scale-[1.02]'
+        : 'text-slate-600 dark:text-slate-400 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-50 dark:hover:from-slate-800 dark:hover:to-slate-800/80 hover:shadow-[0_4px_20px_rgb(0,0,0,0.04)] dark:hover:shadow-[0_4px_20px_rgb(0,0,0,0.2)] hover:scale-[1.01] hover:text-slate-900 dark:hover:text-slate-200'
+    }`}
   >
-    {icon}
-    <span className="font-bold text-sm tracking-wide">{label}</span>
+    {active && (
+      <>
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+      </>
+    )}
+    <div className={`relative z-10 ${active ? 'drop-shadow-sm' : ''}`}>{icon}</div>
+    <span className={`relative z-10 font-bold text-[15px] tracking-wide ${active ? 'drop-shadow-sm' : ''}`}>{label}</span>
+    {!active && (
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/5 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    )}
   </button>
 );
 
