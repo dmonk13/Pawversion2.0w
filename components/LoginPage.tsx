@@ -273,10 +273,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       {/* Dark Overlay gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/90"></div>
 
-      {/* --- SERVER STATUS & CONFIG --- */}
-      <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20">
+      {/* --- SERVER STATUS --- */}
+      <div className="absolute top-0 left-0 right-0 p-6 flex justify-start items-start z-20">
          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border transition-colors duration-500 ${
-           serverStatus === 'online' ? 'bg-green-500/20 border-green-500/30 text-green-300' : 
+           serverStatus === 'online' ? 'bg-green-500/20 border-green-500/30 text-green-300' :
            serverStatus === 'offline' ? 'bg-red-500/20 border-red-500/30 text-red-300' : 'bg-white/10 border-white/20 text-white/50'
          }`}>
             {serverStatus === 'online' ? <Wifi size={10} /> : <WifiOff size={10} />}
@@ -284,111 +284,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                {serverStatus === 'online' ? 'Online' : serverStatus === 'offline' ? 'Offline' : 'Connecting'}
             </span>
          </div>
-         
-         <button 
-           onClick={() => { setTempClientId(googleClientId); setIsConfigOpen(true); }}
-           className="p-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors border border-white/10"
-         >
-             <Settings size={18} />
-         </button>
       </div>
 
-      {/* --- CONFIG MODAL (Unchanged Logic) --- */}
-      {isConfigOpen && (
-          <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
-              <div className="w-full max-w-sm bg-white rounded-[2rem] p-6 animate-in zoom-in-95 duration-200 shadow-2xl max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-start mb-4">
-                      <div>
-                          <h3 className="text-xl font-black text-slate-800">Developer Settings</h3>
-                          <p className="text-xs text-slate-500 mt-1">Configure real authentication.</p>
-                      </div>
-                      <button onClick={() => setIsConfigOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400"><X size={20}/></button>
-                  </div>
-
-                  <div className="space-y-4">
-                      <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-200">
-                          <div className="flex items-start gap-2">
-                            <Key size={14} className="text-slate-500 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-[10px] text-slate-700 font-bold">Get Your Google OAuth Credentials</p>
-                                <ol className="text-[9px] text-slate-600 mt-1 space-y-0.5 list-decimal list-inside">
-                                    <li>Go to Google Cloud Console</li>
-                                    <li>Create OAuth 2.0 Client ID (Web application)</li>
-                                    <li>Add your origin to "Authorized JavaScript origins"</li>
-                                    <li>Copy the Client ID and paste below</li>
-                                </ol>
-                            </div>
-                          </div>
-                      </div>
-
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Google Client ID</label>
-                          <input
-                            type="text"
-                            value={tempClientId}
-                            onChange={(e) => { setTempClientId(e.target.value); setOriginError(null); }}
-                            placeholder="123456789-abc.apps.googleusercontent.com"
-                            className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-mono text-slate-800 outline-none focus:ring-2 focus:ring-orange-500/20"
-                          />
-                          {originError && <p className="text-[10px] text-red-500 font-bold ml-1">{originError}</p>}
-                      </div>
-
-                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
-                          <div className="flex items-start gap-2">
-                            <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wide">Setup Instructions</p>
-                                <p className="text-[10px] text-blue-700/80 leading-relaxed mt-1">
-                                    Add the <strong>Detected Origin</strong> below to "Authorized JavaScript origins" in your Google Cloud Console OAuth credentials.
-                                </p>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                             <label className="text-[9px] font-black uppercase text-blue-400 tracking-widest ml-1">Your Origin (Add this to Google Console)</label>
-                             <div className="flex gap-2">
-                                <div className="flex-1 p-2 bg-white rounded-lg border border-blue-100 font-mono text-[10px] text-slate-600 break-all">
-                                    {window.location.origin}
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(window.location.origin);
-                                        alert("Origin copied to clipboard!");
-                                    }}
-                                    className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 flex-shrink-0"
-                                >
-                                    <Copy size={14} />
-                                </button>
-                             </div>
-                          </div>
-                          <div className="text-[9px] text-blue-600 bg-white/50 p-2 rounded-lg">
-                            <strong>Quick Link:</strong> <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Open Google Cloud Console</a>
-                          </div>
-                      </div>
-
-                      <button 
-                        onClick={handleSaveConfig}
-                        className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-lg active:scale-[0.98]"
-                      >
-                          Save Configuration
-                      </button>
-                      
-                      {googleClientId && (
-                        <button 
-                            onClick={() => {
-                                localStorage.removeItem('google_client_id');
-                                setGoogleClientId('');
-                                setTempClientId('');
-                                setTokenClient(null);
-                            }}
-                            className="w-full py-3 text-red-500 text-xs font-bold hover:bg-red-50 rounded-xl"
-                        >
-                            Reset / Remove Key
-                        </button>
-                      )}
-                  </div>
-              </div>
-          </div>
-      )}
 
       {/* --- BRANDING SECTION --- */}
       <div className="relative z-10 w-full max-w-sm text-center mb-8 flex-1 flex flex-col justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">

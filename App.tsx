@@ -76,6 +76,7 @@ import AIAdvisor from './components/AIAdvisor';
 import Community from './components/Community';
 import Matches from './components/Matches';
 import LoginPage from './components/LoginPage';
+import GoogleOAuthConfig from './components/GoogleOAuthConfig';
 
 // --- INITIAL SAMPLE DATA (For Demo User) ---
 const INITIAL_PETS: Pet[] = [
@@ -152,6 +153,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isAddPetOpen, setIsAddPetOpen] = useState(false);
+  const [isGoogleOAuthOpen, setIsGoogleOAuthOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [userPlan, setUserPlan] = useState<'Free' | 'Pro'>('Free');
   
@@ -698,12 +700,13 @@ const App: React.FC = () => {
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md" onClick={() => setIsSettingsOpen(false)}>
           <div className="absolute top-0 right-0 w-[85%] md:w-[420px] h-full bg-gradient-to-br from-white via-slate-50/80 to-slate-100/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 animate-in slide-in-from-right duration-300 flex flex-col shadow-[0_0_60px_rgba(0,0,0,0.3),0_0_100px_rgba(0,0,0,0.1)] border-l border-slate-200/60 dark:border-slate-700/40" onClick={e => e.stopPropagation()}>
-             <SettingsSidebar 
-                onClose={() => setIsSettingsOpen(false)} 
+             <SettingsSidebar
+                onClose={() => setIsSettingsOpen(false)}
                 onLogout={() => setActionModal({ type: 'logout', isOpen: true })}
                 onDelete={() => setActionModal({ type: 'delete', isOpen: true })}
                 onPause={() => setActionModal({ type: 'pause', isOpen: true })}
                 onOpenPro={() => setIsProModalOpen(true)}
+                onOpenGoogleOAuth={() => setIsGoogleOAuthOpen(true)}
                 onUpdateProfile={handleUpdateProfile}
                 onToggleNotif={handleNotifToggle}
                 onTogglePrivacy={handlePrivacyToggle}
@@ -725,6 +728,11 @@ const App: React.FC = () => {
       {/* Pro Plan Modal */}
       {isProModalOpen && (
         <ProPlanModal onClose={() => setIsProModalOpen(false)} onUpgrade={handleUpgrade} userPlan={userPlan} />
+      )}
+
+      {/* Google OAuth Config Modal */}
+      {isGoogleOAuthOpen && (
+        <GoogleOAuthConfig onClose={() => setIsGoogleOAuthOpen(false)} />
       )}
 
       {/* Add/Edit Pet Modal */}
@@ -830,7 +838,7 @@ const ConfirmationModal = ({ isOpen, title, description, confirmText, cancelText
   )
 }
 
-const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUpdateProfile, onToggleNotif, onTogglePrivacy, notifSettings, privacySettings, userPlan, userName, userIdentifier, userImage, theme, setTheme, onForceLogout, showNotification }: any) => {
+const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onOpenGoogleOAuth, onUpdateProfile, onToggleNotif, onTogglePrivacy, notifSettings, privacySettings, userPlan, userName, userIdentifier, userImage, theme, setTheme, onForceLogout, showNotification }: any) => {
   const [view, setView] = useState<'main' | 'profile' | 'edit_profile' | 'notifications' | 'privacy' | 'appearance' | 'help' | 'terms'>('main');
   const [editName, setEditName] = useState(userName || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -871,7 +879,8 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
       title: 'App Settings',
       items: [
         { id: 'appearance', icon: <Sun size={20} />, label: 'Appearance', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/20' },
-        { id: 'notifications', icon: <Bell size={20} />, label: 'Notifications', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/20' }
+        { id: 'notifications', icon: <Bell size={20} />, label: 'Notifications', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/20' },
+        { id: 'google_oauth', icon: <Key size={20} />, label: 'Google Sign-In', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/20' }
       ]
     },
     {
@@ -1084,7 +1093,14 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
                       {group.items.map(item => (
                          <button
                            key={item.id}
-                           onClick={() => setView(item.id as any)}
+                           onClick={() => {
+                             if (item.id === 'google_oauth') {
+                               onOpenGoogleOAuth();
+                               onClose();
+                             } else {
+                               setView(item.id as any);
+                             }
+                           }}
                            className="relative w-full flex items-center gap-4 p-4 rounded-[1.3rem] hover:bg-white dark:hover:bg-slate-800/80 transition-all duration-300 group active:scale-[0.97] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:scale-[1.01] overflow-hidden"
                          >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-100/30 to-transparent dark:via-slate-700/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
