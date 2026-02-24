@@ -4,6 +4,9 @@ const cors = require('cors');
 const { GoogleGenAI } = require('@google/genai');
 require('dotenv').config();
 
+const { initializeDatabase } = require('./database');
+const { register, login, verifyToken } = require('./auth');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -124,10 +127,29 @@ app.post('/api/identify-breed', async (req, res) => {
 });
 // --- BREED IDENTIFICATION ENDPOINT END ---
 
+app.post('/api/auth/register', register);
+
+app.post('/api/auth/login', login);
+
+app.get('/api/auth/verify', verifyToken, (req, res) => {
+    res.json({ valid: true, user: req.user });
+});
+
 app.get('/', (req, res) => {
     res.send('PawPal Backend is Running');
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+    try {
+        await initializeDatabase();
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+            console.log('Database connected and initialized');
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

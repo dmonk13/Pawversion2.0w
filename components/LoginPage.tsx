@@ -146,6 +146,35 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       // The useEffect [googleClientId] will handle re-initialization
   };
 
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        onLogin('user', data.user.username, data.user.email);
+      } else {
+        alert(data.error || 'Login failed');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Unable to connect to server. Please check your connection.');
+      setIsLoading(false);
+    }
+  };
+
   const handleFinalLogin = (method: 'demo' | 'user', username: string, identifier?: string) => {
     setIsLoading(true);
     setTimeout(() => {
@@ -454,9 +483,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
         {/* EMAIL LOGIN VIEW */}
         {view === 'email' && (
-            <div className="space-y-6 animate-in slide-in-from-right duration-300">
+            <form onSubmit={handleEmailLogin} className="space-y-6 animate-in slide-in-from-right duration-300">
                <div className="flex items-center gap-4">
-                  <button onClick={() => setView('menu')} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"><ChevronLeft size={24} /></button>
+                  <button type="button" onClick={() => setView('menu')} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"><ChevronLeft size={24} /></button>
                   <h3 className="text-xl font-black text-slate-800">Email Login</h3>
                </div>
 
@@ -497,8 +526,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     </button>
                 </div>
                 
-                <button 
-                  onClick={() => handleFinalLogin('user', email.split('@')[0], email)}
+                <button
+                  type="submit"
                   disabled={!email || !password || isLoading}
                   className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-2xl font-black shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none mt-2"
                 >
@@ -506,8 +535,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     <>Sign In <ArrowRight size={20} /></>
                   )}
                 </button>
+
+                <div className="text-center pt-2">
+                  <p className="text-xs text-slate-400">Don't have an account? <button type="button" onClick={() => handleFinalLogin('user', email.split('@')[0] || 'New User', email)} className="text-orange-500 font-bold">Create one</button></p>
+                </div>
               </div>
-            </div>
+            </form>
         )}
 
         {/* FORGOT PASSWORD VIEW */}
