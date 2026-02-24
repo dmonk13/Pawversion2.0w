@@ -48,7 +48,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Endpoint 2: Find Vets using Google Places API
+// Endpoint 2: Find Vets using Gemini with structured output
 app.post('/api/find-vets', async (req, res) => {
     try {
         const { specialty, location } = req.body;
@@ -57,46 +57,72 @@ app.post('/api/find-vets', async (req, res) => {
             return res.status(400).json({ error: "Location is required" });
         }
 
-        const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.API_KEY;
+        const searchTerm = specialty === 'General'
+            ? 'veterinary clinics'
+            : `${specialty} veterinarian specialists`;
 
-        if (!GOOGLE_PLACES_API_KEY) {
-            console.error("Google Maps API key not configured");
-            return res.status(500).json({ error: "API key not configured" });
-        }
+        const prompt = `Find 12 ${searchTerm} near latitude ${location.lat}, longitude ${location.lng}.
 
-        // Determine search query based on specialty
-        const searchQuery = specialty === 'General'
-            ? 'veterinarian'
-            : `${specialty} veterinarian`;
+Return a JSON array with exactly this format (no markdown, just raw JSON):
+[
+  {
+    "name": "Clinic Name",
+    "address": "Full street address",
+    "rating": 4.5,
+    "phone": "phone number if available",
+    "isOpen": true
+  }
+]
 
-        // Use Google Places API Nearby Search
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=5000&type=veterinary_care&keyword=${encodeURIComponent(searchQuery)}&key=${GOOGLE_PLACES_API_KEY}`;
+Return ONLY the JSON array, no other text.`;
 
-        console.log("Fetching from Google Places API...");
-        const placesResponse = await fetch(placesUrl);
-        const placesData = await placesResponse.json();
+        console.log("Requesting vets from Gemini with location:", location);
 
-        console.log("Google Places API Status:", placesData.status);
-        console.log("Results count:", placesData.results?.length || 0);
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                temperature: 0.3,
+                responseMimeType: 'application/json'
+            }
+        });
 
-        if (placesData.status !== 'OK' && placesData.status !== 'ZERO_RESULTS') {
-            console.error("Google Places API Error:", placesData.status, placesData.error_message);
+        let responseText = response.text.trim();
+        console.log("Raw response:", responseText.substring(0, 200));
+
+        // Clean up response
+        responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        let vetsArray = [];
+        try {
+            vetsArray = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error("JSON parse error:", parseError);
+            console.error("Attempted to parse:", responseText);
             return res.status(500).json({
-                error: "Failed to fetch from Google Places API",
-                details: placesData.error_message
+                error: "Failed to parse AI response",
+                details: "The AI did not return valid JSON"
             });
         }
 
-        // Transform results to our format
-        const vets = (placesData.results || []).slice(0, 12).map(place => ({
-            name: place.name,
-            address: place.vicinity,
-            rating: place.rating || 4.5,
+        if (!Array.isArray(vetsArray)) {
+            console.error("Response is not an array:", vetsArray);
+            return res.status(500).json({
+                error: "Invalid response format",
+                details: "Expected an array of veterinarians"
+            });
+        }
+
+        // Transform to our format
+        const vets = vetsArray.slice(0, 12).map((vet, index) => ({
+            name: vet.name || `Veterinary Clinic ${index + 1}`,
+            address: vet.address || 'Address not available',
+            rating: vet.rating || 4.5,
             specialty: specialty,
-            uri: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+            uri: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vet.name + ' ' + vet.address)}`,
             distance: 'Nearby',
-            isOpen: place.opening_hours?.open_now ?? true,
-            placeId: place.place_id
+            isOpen: vet.isOpen ?? true,
+            phone: vet.phone
         }));
 
         console.log("Returning", vets.length, "veterinarians");
@@ -105,7 +131,10 @@ app.post('/api/find-vets', async (req, res) => {
 
     } catch (error) {
         console.error("Vet Search Error:", error);
-        res.status(500).json({ error: "Failed to find vets" });
+        res.status(500).json({
+            error: "Failed to find vets",
+            details: error.message
+        });
     }
 });
 

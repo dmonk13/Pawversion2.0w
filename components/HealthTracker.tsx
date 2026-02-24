@@ -223,12 +223,19 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
         body: JSON.stringify({ specialty, location })
       });
 
-      if (!response.ok) throw new Error('Backend vet search failed');
-      
       const data = await response.json();
 
       console.log("=== VET API RESPONSE ===");
+      console.log("Response status:", response.status);
       console.log("Response:", data);
+
+      if (!response.ok) {
+        const errorMsg = data.error || 'Backend vet search failed';
+        const errorDetails = data.details || '';
+        const errorHelp = data.help || '';
+        console.error("API Error:", errorMsg, errorDetails, errorHelp);
+        throw new Error(`${errorMsg}${errorDetails ? ': ' + errorDetails : ''}`);
+      }
 
       let parsedVets: VetInfo[] = [];
 
