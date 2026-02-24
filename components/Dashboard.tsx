@@ -411,7 +411,7 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
                 contents: [{
                     parts: [
                         { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
-                        { text: "Identify the dog breed in this image. Provide the breed name and 3 short bullet points about their typical personality traits. If it's not a dog, strictly say 'This doesn't look like a dog'." }
+                        { text: "Identify the dog breed in this image. Provide ONLY the breed name on the first line with double asterisks (e.g., **English Cocker Spaniel**), then write 'Here are three typical personality traits:' followed by exactly 3 bullet points about their personality traits. Each bullet point should start with '* **Trait Name:**' followed by the description. Keep each description concise (one sentence). If it's not a dog, strictly say 'This doesn't look like a dog'." }
                     ]
                 }],
             });
@@ -424,56 +424,157 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-300">
-                <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
-                    <X size={20} />
-                </button>
-                <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-orange-500 border border-orange-100 dark:border-orange-500/20">
-                        <ScanLine size={40} />
+    const parseResult = (text: string) => {
+        const lines = text.split('\n').filter(line => line.trim());
+        const breedLine = lines.find(line => line.includes('**'));
+        const breed = breedLine?.replace(/\*\*/g, '').trim() || '';
+
+        const traitLines = lines.filter(line => line.trim().startsWith('*'));
+        const traits = traitLines.map(line => {
+            const cleaned = line.replace(/^\*\s*/, '').trim();
+            const match = cleaned.match(/\*\*(.*?)\*\*:?\s*(.*)/);
+            if (match) {
+                return { title: match[1], description: match[2] };
+            }
+            return { title: '', description: cleaned };
+        });
+
+        return { breed, traits };
+    };
+
+    const renderResult = () => {
+        if (!result) return null;
+
+        if (result.includes("doesn't look like a dog") || result.includes("Failed to analyze")) {
+            return (
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-3">
+                    <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center mx-auto">
+                        <X size={24} className="text-slate-400" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">Breed Scanner</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">AI-powered dog identification</p>
+                    <p className="text-slate-600 font-medium text-sm">{result}</p>
+                    <button
+                        onClick={() => { setImage(null); setResult(null); }}
+                        className="w-full mt-4 py-3 text-sm font-bold text-slate-700 border-2 border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors"
+                    >
+                        Try Another Photo
+                    </button>
+                </div>
+            );
+        }
+
+        const { breed, traits } = parseResult(result);
+
+        return (
+            <div className="space-y-4">
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-2xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                            <Sparkles size={16} className="text-white" fill="currentColor" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identified Breed</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-900 leading-tight">{breed}</h3>
                 </div>
 
-                <div className="space-y-6">
-                    <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full aspect-square bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:border-orange-400 transition-all overflow-hidden relative group"
-                    >
-                        {image ? (
-                            <img src={image} className="w-full h-full object-cover" alt="Preview" />
-                        ) : (
-                            <div className="flex flex-col items-center text-slate-400 group-hover:text-orange-500 transition-colors">
-                                <Camera size={40} strokeWidth={1.5} />
-                                <span className="text-xs font-bold uppercase tracking-widest mt-2">Upload Photo</span>
-                            </div>
-                        )}
-                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+                {traits.length > 0 && (
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                            <Heart size={14} className="text-orange-500" />
+                            Personality Traits
+                        </h4>
+                        <div className="space-y-3">
+                            {traits.map((trait, idx) => (
+                                <div key={idx} className="flex gap-3">
+                                    <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-black text-xs shrink-0 mt-0.5">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                        {trait.title && (
+                                            <h5 className="font-bold text-slate-800 text-sm mb-1">{trait.title}</h5>
+                                        )}
+                                        <p className="text-slate-600 text-sm leading-relaxed">{trait.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
+                )}
+
+                <button
+                    onClick={() => { setImage(null); setResult(null); }}
+                    className="w-full py-3 text-sm font-bold text-slate-700 border-2 border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors"
+                >
+                    Scan Another Dog
+                </button>
+            </div>
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 z-[120] bg-slate-900/70 backdrop-blur-lg flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+                <button
+                    onClick={onClose}
+                    className="absolute top-6 right-6 p-2.5 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all z-10"
+                >
+                    <X size={20} />
+                </button>
+
+                <div className="text-center mb-8">
+                    <div className="w-20 h-20 bg-gradient-to-br from-orange-50 to-orange-100 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-orange-500 border border-orange-200 shadow-sm">
+                        <ScanLine size={40} strokeWidth={2.5} />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Breed Scanner</h2>
+                    <p className="text-sm text-slate-500 mt-2 font-medium">AI-powered dog identification</p>
+                </div>
+
+                <div className="space-y-5">
+                    {!result && (
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-square bg-gradient-to-br from-slate-50 to-slate-100 rounded-[2rem] border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-orange-400 hover:from-orange-50 hover:to-orange-100 transition-all overflow-hidden relative group"
+                        >
+                            {image ? (
+                                <>
+                                    <img src={image} className="w-full h-full object-cover" alt="Preview" />
+                                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors flex items-center justify-center">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                                            <span className="text-xs font-bold text-slate-700">Change Photo</span>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center text-slate-400 group-hover:text-orange-500 transition-colors">
+                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-3 shadow-sm border border-slate-200">
+                                        <Camera size={32} strokeWidth={1.5} />
+                                    </div>
+                                    <span className="text-sm font-bold">Upload Photo</span>
+                                    <span className="text-xs text-slate-400 mt-1">Click to select</span>
+                                </div>
+                            )}
+                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+                        </div>
+                    )}
 
                     {result ? (
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-500/20 text-blue-900 dark:text-blue-100 text-sm leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto no-scrollbar">
-                           <h4 className="font-black text-blue-600 dark:text-blue-400 uppercase text-[10px] tracking-widest mb-2 flex items-center gap-2">
-                               <Sparkles size={12} fill="currentColor" /> Result
-                           </h4>
-                           {result}
-                           <button 
-                             onClick={() => { setImage(null); setResult(null); }}
-                             className="w-full mt-4 py-2 text-xs font-black uppercase tracking-widest text-blue-500 border border-blue-200 rounded-lg bg-white dark:bg-slate-800"
-                           >
-                             Scan Another
-                           </button>
-                        </div>
+                        renderResult()
                     ) : (
-                        <button 
+                        <button
                             disabled={!image || loading}
                             onClick={handleScan}
-                            className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
+                            className="w-full py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl font-black text-base shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                         >
-                            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Analyze Breed'}
+                            {loading ? (
+                                <>
+                                    <Loader2 className="animate-spin" size={22} />
+                                    <span>Analyzing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={20} />
+                                    <span>Analyze Breed</span>
+                                </>
+                            )}
                         </button>
                     )}
                 </div>
