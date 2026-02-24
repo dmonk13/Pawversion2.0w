@@ -226,106 +226,28 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       if (!response.ok) throw new Error('Backend vet search failed');
       
       const data = await response.json();
-      
+
+      console.log("=== VET API RESPONSE ===");
+      console.log("Response:", data);
+
       let parsedVets: VetInfo[] = [];
 
-      console.log("=== FRONTEND PARSING DEBUG ===");
-      console.log("Full API Response:", JSON.stringify(data, null, 2));
-
-      // 1. Try to extract from Grounding Metadata
-      const groundingMetadata = data.groundingMetadata || data.candidates?.[0]?.groundingMetadata;
-      const chunks = groundingMetadata?.groundingChunks || [];
-
-      console.log("Grounding Metadata:", groundingMetadata);
-      console.log("Grounding Chunks Found:", chunks.length);
-
-      if (chunks.length > 0) {
-          parsedVets = chunks.map((chunk: any, index: number) => {
-            console.log(`Processing chunk ${index}:`, JSON.stringify(chunk, null, 2));
-
-            // Try different possible structures
-            const mapsData = chunk.maps;
-            const webData = chunk.web;
-            const retrievedContext = chunk.retrievedContext;
-
-            if (mapsData) {
-                console.log("Found maps data:", mapsData);
-                return {
-                    name: mapsData.title || mapsData.name || 'Veterinary Clinic',
-                    uri: mapsData.uri || mapsData.googleMapsUri || '',
-                    specialty: specialty,
-                    address: mapsData.address || mapsData.snippet || 'Address not available',
-                    distance: 'Nearby',
-                    rating: mapsData.rating || 4.5,
-                    phone: mapsData.phoneNumber,
-                    isOpen: mapsData.isOpen ?? true
-                };
-            }
-
-            if (retrievedContext) {
-                console.log("Found retrieved context:", retrievedContext);
-                const title = retrievedContext.title || '';
-                const uri = retrievedContext.uri || '';
-                return {
-                    name: title,
-                    uri: uri,
-                    specialty: specialty,
-                    address: 'View on Google Maps',
-                    distance: 'Nearby',
-                    rating: 4.5,
-                    isOpen: true
-                };
-            }
-
-            if (webData) {
-                console.log("Found web data:", webData);
-                return {
-                    name: webData.title || 'Veterinary Clinic',
-                    uri: webData.uri || '',
-                    specialty: specialty,
-                    address: webData.snippet || 'View on map',
-                    distance: 'Nearby',
-                    rating: 4.5,
-                    isOpen: true
-                };
-            }
-
-            return null;
-        }).filter((v: any) => v && v.name && v.uri);
-
-        console.log("Parsed Vets from Grounding Chunks:", parsedVets.length, parsedVets);
+      // New format: Direct vets array from Google Places API
+      if (data.vets && Array.isArray(data.vets)) {
+          parsedVets = data.vets;
+          console.log("Found", parsedVets.length, "vets from Google Places API");
       }
 
-      // 2. If chunks failed, try parsing JSON from text (Fallback)
       if (parsedVets.length === 0) {
-          console.log("No grounding chunks found, trying JSON parsing from text...");
-          try {
-            const rawText = data.text || '';
-            console.log("Raw Text Response:", rawText);
-            const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const start = jsonText.indexOf('[');
-            const end = jsonText.lastIndexOf(']');
-            if (start !== -1 && end !== -1) {
-                 parsedVets = JSON.parse(jsonText.substring(start, end + 1));
-                 console.log("Parsed Vets from JSON:", parsedVets.length);
-            }
-          } catch (jsonError) {
-             console.warn("JSON parsing failed", jsonError);
-          }
+          console.error("No veterinarians found in the area");
+          throw new Error("No veterinarians found nearby. Please try a different location.");
       }
 
-      // 3. If everything failed, show error message
-      if (parsedVets.length === 0) {
-          console.error("No vet data could be parsed from API response");
-          console.error("API may not be returning grounding metadata correctly");
-          throw new Error("No vet data available from API");
-      } else {
-          console.log("Successfully parsed", parsedVets.length, "vets");
-      }
+      console.log("Successfully loaded", parsedVets.length, "veterinarians");
 
       // Deduplicate by name
       const uniqueVets = Array.from(new Map(parsedVets.map(v => [v.name, v])).values());
-      
+
       setVetList(uniqueVets);
       setVetCache(prev => ({ ...prev, [specialty]: uniqueVets }));
       setCurrentPage(1);

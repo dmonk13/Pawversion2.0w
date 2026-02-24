@@ -48,7 +48,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Endpoint 2: Find Vets
+// Endpoint 2: Find Vets using Google Places API
 app.post('/api/find-vets', async (req, res) => {
     try {
         const { specialty, location } = req.body;
@@ -57,40 +57,51 @@ app.post('/api/find-vets', async (req, res) => {
             return res.status(400).json({ error: "Location is required" });
         }
 
-        // Request veterinarians with Google Maps grounding
-        const prompt = `List 12 ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarian specialists'} near latitude ${location.lat}, longitude ${location.lng}. For each, provide: name, full address, phone number, and rating.`;
+        const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.API_KEY;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{ googleMaps: {} }],
-                responseModalities: ['TEXT'],
-                toolConfig: {
-                    retrievalConfig: {
-                        latLng: {
-                            latitude: location.lat,
-                            longitude: location.lng
-                        }
-                    }
-                }
-            }
-        });
-
-        // Log the full response structure for debugging
-        console.log("=== VET SEARCH DEBUG ===");
-        console.log("Response Text:", response.text);
-        console.log("Response Candidates:", JSON.stringify(response.candidates, null, 2));
-
-        if (response.candidates?.[0]?.groundingMetadata) {
-            console.log("Grounding Metadata:", JSON.stringify(response.candidates[0].groundingMetadata, null, 2));
+        if (!GOOGLE_PLACES_API_KEY) {
+            console.error("Google Maps API key not configured");
+            return res.status(500).json({ error: "API key not configured" });
         }
 
-        res.json({
-            text: response.text,
-            candidates: response.candidates,
-            groundingMetadata: response.candidates?.[0]?.groundingMetadata
-        });
+        // Determine search query based on specialty
+        const searchQuery = specialty === 'General'
+            ? 'veterinarian'
+            : `${specialty} veterinarian`;
+
+        // Use Google Places API Nearby Search
+        const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=5000&type=veterinary_care&keyword=${encodeURIComponent(searchQuery)}&key=${GOOGLE_PLACES_API_KEY}`;
+
+        console.log("Fetching from Google Places API...");
+        const placesResponse = await fetch(placesUrl);
+        const placesData = await placesResponse.json();
+
+        console.log("Google Places API Status:", placesData.status);
+        console.log("Results count:", placesData.results?.length || 0);
+
+        if (placesData.status !== 'OK' && placesData.status !== 'ZERO_RESULTS') {
+            console.error("Google Places API Error:", placesData.status, placesData.error_message);
+            return res.status(500).json({
+                error: "Failed to fetch from Google Places API",
+                details: placesData.error_message
+            });
+        }
+
+        // Transform results to our format
+        const vets = (placesData.results || []).slice(0, 12).map(place => ({
+            name: place.name,
+            address: place.vicinity,
+            rating: place.rating || 4.5,
+            specialty: specialty,
+            uri: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+            distance: 'Nearby',
+            isOpen: place.opening_hours?.open_now ?? true,
+            placeId: place.place_id
+        }));
+
+        console.log("Returning", vets.length, "veterinarians");
+
+        res.json({ vets });
 
     } catch (error) {
         console.error("Vet Search Error:", error);
