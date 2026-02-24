@@ -194,34 +194,6 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       isOpen: true
   });
 
-  // Generate mock vet data based on location (for demonstration when API doesn't return results)
-  const generateMockVets = (spec: string, location: {lat: number, lng: number}): VetInfo[] => {
-      const vetNames = [
-          'Paws & Claws Veterinary Clinic',
-          'Happy Tails Animal Hospital',
-          'Pet Care Center',
-          'City Veterinary Clinic',
-          'Advanced Pet Hospital',
-          'Compassionate Care Vet',
-          'All Pets Veterinary Services',
-          'Healthy Paws Clinic',
-          'Animal Wellness Center',
-          'VetMed Emergency Hospital',
-          'Furry Friends Clinic',
-          'Pet Health Specialists'
-      ];
-
-      return vetNames.map((name, idx) => ({
-          name: `${name}${spec !== 'General' ? ` - ${spec}` : ''}`,
-          address: `${100 + idx * 50} Main Street, Suite ${idx + 1}`,
-          distance: `${(0.5 + idx * 0.3).toFixed(1)} mi`,
-          rating: Number((4.2 + Math.random() * 0.7).toFixed(1)),
-          specialty: spec,
-          uri: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=nearby`,
-          phone: `(555) ${100 + idx}${200 + idx}-${1000 + idx * 111}`,
-          isOpen: idx % 3 !== 0 // Some closed for variety
-      }));
-  };
 
   const fetchVets = async (specialty: string, forceRefresh = false) => {
     if (!location && isLocating) return;
@@ -257,33 +229,71 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
       
       let parsedVets: VetInfo[] = [];
 
+      console.log("=== FRONTEND PARSING DEBUG ===");
       console.log("Full API Response:", JSON.stringify(data, null, 2));
 
-      // 1. Try to extract from Grounding Chunks (Primary Source for Maps Tool)
-      const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      // 1. Try to extract from Grounding Metadata
+      const groundingMetadata = data.groundingMetadata || data.candidates?.[0]?.groundingMetadata;
+      const chunks = groundingMetadata?.groundingChunks || [];
+
+      console.log("Grounding Metadata:", groundingMetadata);
       console.log("Grounding Chunks Found:", chunks.length);
 
       if (chunks.length > 0) {
-          parsedVets = chunks.map((c: any) => {
-            const src = c.maps || c.web;
-            if (!src) return null;
+          parsedVets = chunks.map((chunk: any, index: number) => {
+            console.log(`Processing chunk ${index}:`, JSON.stringify(chunk, null, 2));
 
-            // Extract additional details from the maps source
-            const placeDetails = src.place || {};
+            // Try different possible structures
+            const mapsData = chunk.maps;
+            const webData = chunk.web;
+            const retrievedContext = chunk.retrievedContext;
 
-            return {
-                name: src.title || placeDetails.displayName?.text || 'Veterinary Clinic',
-                uri: src.googleMapsUri || src.uri,
-                specialty: specialty,
-                address: src.address || placeDetails.formattedAddress || 'View details on map',
-                distance: 'Nearby',
-                rating: placeDetails.rating || src.rating || 4.5,
-                phone: placeDetails.phoneNumber || placeDetails.nationalPhoneNumber,
-                isOpen: placeDetails.currentOpeningHours?.openNow ?? true
-            };
+            if (mapsData) {
+                console.log("Found maps data:", mapsData);
+                return {
+                    name: mapsData.title || mapsData.name || 'Veterinary Clinic',
+                    uri: mapsData.uri || mapsData.googleMapsUri || '',
+                    specialty: specialty,
+                    address: mapsData.address || mapsData.snippet || 'Address not available',
+                    distance: 'Nearby',
+                    rating: mapsData.rating || 4.5,
+                    phone: mapsData.phoneNumber,
+                    isOpen: mapsData.isOpen ?? true
+                };
+            }
+
+            if (retrievedContext) {
+                console.log("Found retrieved context:", retrievedContext);
+                const title = retrievedContext.title || '';
+                const uri = retrievedContext.uri || '';
+                return {
+                    name: title,
+                    uri: uri,
+                    specialty: specialty,
+                    address: 'View on Google Maps',
+                    distance: 'Nearby',
+                    rating: 4.5,
+                    isOpen: true
+                };
+            }
+
+            if (webData) {
+                console.log("Found web data:", webData);
+                return {
+                    name: webData.title || 'Veterinary Clinic',
+                    uri: webData.uri || '',
+                    specialty: specialty,
+                    address: webData.snippet || 'View on map',
+                    distance: 'Nearby',
+                    rating: 4.5,
+                    isOpen: true
+                };
+            }
+
+            return null;
         }).filter((v: any) => v && v.name && v.uri);
 
-        console.log("Parsed Vets from Grounding Chunks:", parsedVets.length);
+        console.log("Parsed Vets from Grounding Chunks:", parsedVets.length, parsedVets);
       }
 
       // 2. If chunks failed, try parsing JSON from text (Fallback)
@@ -304,14 +314,11 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
           }
       }
 
-      // 3. If everything failed, use mock data based on location
+      // 3. If everything failed, show error message
       if (parsedVets.length === 0) {
-          console.warn("No structured vet data found. Generating mock vet data based on location.");
-          if (location) {
-              parsedVets = generateMockVets(specialty, location);
-          } else {
-              parsedVets = [getFallbackCard(specialty)];
-          }
+          console.error("No vet data could be parsed from API response");
+          console.error("API may not be returning grounding metadata correctly");
+          throw new Error("No vet data available from API");
       } else {
           console.log("Successfully parsed", parsedVets.length, "vets");
       }
@@ -325,7 +332,9 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
 
     } catch (e: any) {
       console.error("Error fetching vets:", e);
-      setVetList([getFallbackCard(specialty)]);
+      console.error("Error details:", e.message);
+      setLocationError("Unable to fetch veterinarians. Please try again.");
+      setVetList([]);
     } finally {
       setIsLoadingVets(false);
     }

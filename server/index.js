@@ -57,14 +57,15 @@ app.post('/api/find-vets', async (req, res) => {
             return res.status(400).json({ error: "Location is required" });
         }
 
-        // Updated prompt to request 12 vets for 2 pages (6 per page)
-        const prompt = `Find 12 nearby ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarians'} near the provided location. Include their names, addresses, and contact information.`;
+        // Request veterinarians with Google Maps grounding
+        const prompt = `List 12 ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarian specialists'} near latitude ${location.lat}, longitude ${location.lng}. For each, provide: name, full address, phone number, and rating.`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 tools: [{ googleMaps: {} }],
+                responseModalities: ['TEXT'],
                 toolConfig: {
                     retrievalConfig: {
                         latLng: {
@@ -76,12 +77,19 @@ app.post('/api/find-vets', async (req, res) => {
             }
         });
 
-        console.log("Vet Search Response - Candidates:", JSON.stringify(response.candidates, null, 2));
-        console.log("Vet Search Response - Text:", response.text);
+        // Log the full response structure for debugging
+        console.log("=== VET SEARCH DEBUG ===");
+        console.log("Response Text:", response.text);
+        console.log("Response Candidates:", JSON.stringify(response.candidates, null, 2));
+
+        if (response.candidates?.[0]?.groundingMetadata) {
+            console.log("Grounding Metadata:", JSON.stringify(response.candidates[0].groundingMetadata, null, 2));
+        }
 
         res.json({
             text: response.text,
-            candidates: response.candidates // Pass candidates for grounding metadata
+            candidates: response.candidates,
+            groundingMetadata: response.candidates?.[0]?.groundingMetadata
         });
 
     } catch (error) {
