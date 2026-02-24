@@ -434,7 +434,14 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
             const cleaned = line.replace(/^\*\s*/, '').trim();
             const match = cleaned.match(/\*\*(.*?)\*\*:?\s*(.*)/);
             if (match) {
-                return { title: match[1], description: match[2] };
+                let title = match[1];
+                let description = match[2];
+
+                if (title.includes(breed)) {
+                    title = title.replace(breed, '').replace(/^\*+|\*+$/g, '').trim();
+                }
+
+                return { title, description };
             }
             return { title: '', description: cleaned };
         });
@@ -466,31 +473,36 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
 
         return (
             <div className="space-y-4">
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-2xl border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                            <Sparkles size={16} className="text-white" fill="currentColor" />
+                <div className="relative bg-gradient-to-br from-orange-50 via-orange-50 to-amber-50 p-6 rounded-2xl border-2 border-orange-200 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-300/20 rounded-full blur-2xl -mr-8 -mt-8"></div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/30">
+                                <Sparkles size={16} className="text-white" fill="currentColor" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600">Identified Breed</span>
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identified Breed</span>
+                        <h3 className="text-2xl font-black text-slate-900 leading-tight">{breed}</h3>
                     </div>
-                    <h3 className="text-2xl font-black text-slate-900 leading-tight">{breed}</h3>
                 </div>
 
                 {traits.length > 0 && (
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                            <Heart size={14} className="text-orange-500" />
-                            Personality Traits
-                        </h4>
-                        <div className="space-y-3">
+                    <div className="bg-white p-6 rounded-2xl border-2 border-slate-200 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                            <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <Heart size={14} className="text-orange-500" fill="currentColor" />
+                            </div>
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-700">
+                                Personality Traits
+                            </h4>
+                        </div>
+                        <div className="space-y-4">
                             {traits.map((trait, idx) => (
                                 <div key={idx} className="flex gap-3">
-                                    <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-black text-xs shrink-0 mt-0.5">
-                                        {idx + 1}
-                                    </div>
+                                    <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-2"></div>
                                     <div className="flex-1">
                                         {trait.title && (
-                                            <h5 className="font-bold text-slate-800 text-sm mb-1">{trait.title}</h5>
+                                            <h5 className="font-bold text-slate-900 text-sm mb-1.5">{trait.title}</h5>
                                         )}
                                         <p className="text-slate-600 text-sm leading-relaxed">{trait.description}</p>
                                     </div>
@@ -502,30 +514,31 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
 
                 <button
                     onClick={() => { setImage(null); setResult(null); }}
-                    className="w-full py-3 text-sm font-bold text-slate-700 border-2 border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors"
+                    className="w-full py-3.5 text-sm font-black text-slate-700 border-2 border-slate-300 rounded-xl bg-white hover:bg-slate-50 hover:border-slate-400 transition-all flex items-center justify-center gap-2 group"
                 >
-                    Scan Another Dog
+                    <Camera size={18} className="group-hover:scale-110 transition-transform" />
+                    <span>Scan Another Dog</span>
                 </button>
             </div>
         );
     };
 
     return (
-        <div className="fixed inset-0 z-[120] bg-slate-900/70 backdrop-blur-lg flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-[3rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto border border-slate-100">
                 <button
                     onClick={onClose}
-                    className="absolute top-6 right-6 p-2.5 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all z-10"
+                    className="absolute top-6 right-6 p-2.5 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all z-10 hover:rotate-90 duration-300"
                 >
                     <X size={20} />
                 </button>
 
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-orange-50 to-orange-100 rounded-[2rem] flex items-center justify-center mx-auto mb-4 text-orange-500 border border-orange-200 shadow-sm">
-                        <ScanLine size={40} strokeWidth={2.5} />
+                    <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-amber-500 rounded-[2rem] flex items-center justify-center mx-auto mb-5 text-white shadow-xl shadow-orange-500/30 border-4 border-orange-100">
+                        <ScanLine size={44} strokeWidth={2.5} />
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Breed Scanner</h2>
-                    <p className="text-sm text-slate-500 mt-2 font-medium">AI-powered dog identification</p>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Breed Scanner</h2>
+                    <p className="text-sm text-slate-500 font-medium">AI-powered dog identification</p>
                 </div>
 
                 <div className="space-y-5">
@@ -562,7 +575,7 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
                         <button
                             disabled={!image || loading}
                             onClick={handleScan}
-                            className="w-full py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl font-black text-base shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                            className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-2xl font-black text-base shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                         >
                             {loading ? (
                                 <>
@@ -571,7 +584,7 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
                                 </>
                             ) : (
                                 <>
-                                    <Sparkles size={20} />
+                                    <Sparkles size={20} fill="currentColor" />
                                     <span>Analyze Breed</span>
                                 </>
                             )}
