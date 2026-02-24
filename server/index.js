@@ -57,26 +57,29 @@ app.post('/api/find-vets', async (req, res) => {
             return res.status(400).json({ error: "Location is required" });
         }
 
-        // Updated prompt to encourage tool use rather than strict JSON generation
-        const prompt = `Find 5 ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarians'} near the provided location.`;
+        // Updated prompt to request 12 vets for 2 pages (6 per page)
+        const prompt = `Find 12 nearby ${specialty === 'General' ? 'veterinary clinics' : specialty + ' veterinarians'} near the provided location. Include their names, addresses, and contact information.`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 tools: [{ googleMaps: {} }],
-                toolConfig: { 
+                toolConfig: {
                     retrievalConfig: {
                         latLng: {
                             latitude: location.lat,
                             longitude: location.lng
                         }
                     }
-                } 
+                }
             }
         });
 
-        res.json({ 
+        console.log("Vet Search Response - Candidates:", JSON.stringify(response.candidates, null, 2));
+        console.log("Vet Search Response - Text:", response.text);
+
+        res.json({
             text: response.text,
             candidates: response.candidates // Pass candidates for grounding metadata
         });
