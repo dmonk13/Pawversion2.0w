@@ -420,29 +420,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       )}
 
       {/* --- BRANDING SECTION --- */}
-      <div className="relative z-10 w-full max-w-sm text-center mb-8 flex-1 flex flex-col justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-amber-500 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-orange-500/40 mb-6 transform rotate-6 border-4 border-white/10 backdrop-blur-sm">
-            <span className="text-5xl font-black text-white">P</span>
+      <div className="relative z-10 w-full max-w-sm text-center mb-8 flex-1 flex flex-col justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-1000 px-6">
+          <div className="w-28 h-28 bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-orange-500/50 mb-8 transform rotate-3 border-4 border-white/20 backdrop-blur-sm transition-transform hover:rotate-6 hover:scale-105">
+            <span className="text-6xl font-black text-white transform -rotate-3">P</span>
           </div>
-          <h1 className="text-5xl font-black text-white tracking-tighter drop-shadow-lg mb-2">PawPal</h1>
-          <p className="text-lg font-medium text-white/80 max-w-[200px] leading-relaxed">
-            The smartest companion for your furry family.
+          <h1 className="text-6xl font-black text-white tracking-tight drop-shadow-2xl mb-4 leading-none">PawPal</h1>
+          <p className="text-base font-semibold text-white/90 max-w-[280px] leading-relaxed drop-shadow-lg">
+            Your intelligent companion for complete pet care and wellness
           </p>
       </div>
 
       {/* --- LOGIN CARD --- */}
-      <div className="relative z-10 w-full max-w-md bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] p-8 pb-12 md:pb-8 shadow-2xl animate-in slide-in-from-bottom-20 duration-500 ease-out">
+      <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl rounded-t-[3rem] md:rounded-[3rem] p-8 pb-12 md:pb-8 shadow-2xl border border-white/20 animate-in slide-in-from-bottom-20 duration-500 ease-out">
         {/* Decorative Handle for Mobile Feel */}
-        <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8 md:hidden"></div>
+        <div className="w-16 h-1.5 bg-slate-300 rounded-full mx-auto mb-6 md:hidden"></div>
 
         {view === 'menu' && (
-           <div className="space-y-4 animate-in slide-in-from-left duration-300">
-              <h2 className="text-2xl font-black text-slate-800 text-center mb-6">Welcome Back</h2>
+           <div className="space-y-5 animate-in slide-in-from-left duration-300">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Welcome Back</h2>
+                <p className="text-sm text-slate-500 font-medium leading-relaxed">Sign in to access your pet's health dashboard and connect with the community</p>
+              </div>
               
-              <button 
+              <button
                 onClick={handleGoogleClick}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98] shadow-sm relative overflow-hidden group"
+                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-lg transition-all active:scale-[0.98] shadow-md relative overflow-hidden group"
               >
                  <svg className="w-6 h-6" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -454,29 +457,45 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   {isLoading && <div className="absolute inset-0 bg-white/50 flex items-center justify-center"><Loader2 className="animate-spin text-slate-800" /></div>}
               </button>
 
-              <button 
+              <button
                 onClick={() => setView('apple_sim')}
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-black text-white transition-all active:scale-[0.98] shadow-lg shadow-black/20 hover:bg-slate-900"
+                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-black text-white transition-all active:scale-[0.98] shadow-lg shadow-black/30 hover:bg-slate-900 hover:shadow-xl"
               >
                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74 1.18 0 2.45-1.15 4.09-.6 1.12.39 2.21 1.25 2.72 2.04-2.82 1.62-2.12 5.51.68 6.75-.48 1.4-1.12 2.76-2.57 4.04zM13.03 5.48c-.66 1.76-2.91 3.12-4.43 2.84-.33-1.74 1.18-3.64 2.89-4.32 1.35-.58 3.13.06 1.54 1.48z" /></svg>
                  <span className="font-bold">Continue with Apple</span>
               </button>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                 <button onClick={() => setView('phone')} className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm transition-colors flex flex-col items-center gap-2">
-                    <Smartphone size={24} className="text-slate-400" />
-                    Phone
+              <div className="relative py-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-4 text-slate-400 font-bold tracking-wider">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                 <button onClick={() => setView('phone')} className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-sm transition-all active:scale-[0.98] flex flex-col items-center gap-3 shadow-sm hover:shadow-md">
+                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                      <Phone size={24} className="text-slate-600" />
+                    </div>
+                    <span>Phone</span>
                  </button>
-                 <button onClick={() => setView('email')} className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm transition-colors flex flex-col items-center gap-2">
-                    <Mail size={24} className="text-slate-400" />
-                    Email
+                 <button onClick={() => setView('email')} className="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 border-2 border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-sm transition-all active:scale-[0.98] flex flex-col items-center gap-3 shadow-sm hover:shadow-md">
+                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                      <Mail size={24} className="text-slate-600" />
+                    </div>
+                    <span>Email</span>
                  </button>
               </div>
 
-              <div className="pt-4 text-center">
-                 <button onClick={() => handleFinalLogin('demo', 'Demo User', 'demo@pawpal.com')} className="text-orange-500 font-bold text-xs uppercase tracking-widest hover:text-orange-600 transition-colors">
-                    Try Demo Account
-                 </button>
+              <div className="pt-6 text-center">
+                 <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4">
+                   <p className="text-xs text-slate-600 mb-3 font-medium">Want to explore first?</p>
+                   <button onClick={() => handleFinalLogin('demo', 'Demo User', 'demo@pawpal.com')} className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-500/30 hover:shadow-xl hover:from-orange-600 hover:to-amber-600 transition-all active:scale-[0.98]">
+                      Try Demo Account
+                   </button>
+                 </div>
               </div>
            </div>
         )}
@@ -484,60 +503,70 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         {/* EMAIL LOGIN VIEW */}
         {view === 'email' && (
             <form onSubmit={handleEmailLogin} className="space-y-6 animate-in slide-in-from-right duration-300">
-               <div className="flex items-center gap-4">
-                  <button type="button" onClick={() => setView('menu')} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"><ChevronLeft size={24} /></button>
-                  <h3 className="text-xl font-black text-slate-800">Email Login</h3>
+               <div className="flex items-center gap-4 mb-2">
+                  <button type="button" onClick={() => setView('menu')} className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-all active:scale-95 shadow-sm"><ChevronLeft size={22} /></button>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Email Sign In</h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Enter your credentials to continue</p>
+                  </div>
                </div>
 
-              <div className="space-y-4">
-                <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
-                        <Mail size={20} />
-                    </div>
-                    <input 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email Address"
-                      className="w-full p-4 pl-12 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all"
-                    />
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 mb-2 block ml-1">Email Address</label>
+                  <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
+                          <Mail size={20} />
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full p-4 pl-12 bg-slate-50 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                      />
+                  </div>
                 </div>
-                
-                <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
-                        <Lock size={20} />
-                    </div>
-                    <input 
-                      type="password" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Password"
-                      className="w-full p-4 pl-12 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all"
-                    />
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 mb-2 block ml-1">Password</label>
+                  <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
+                          <Lock size={20} />
+                      </div>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className="w-full p-4 pl-12 bg-slate-50 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                      />
+                  </div>
                 </div>
 
                 {/* Forgot Password Link */}
-                <div className="flex justify-end">
-                    <button 
+                <div className="flex justify-end -mt-1">
+                    <button
+                        type="button"
                         onClick={() => { setView('forgot_password'); setResetSent(false); setResetEmail(''); }}
-                        className="text-xs font-bold text-slate-400 hover:text-orange-500 transition-colors"
+                        className="text-xs font-bold text-slate-500 hover:text-orange-500 transition-colors underline underline-offset-2"
                     >
-                        Forgot Password?
+                        Forgot your password?
                     </button>
                 </div>
-                
+
                 <button
                   type="submit"
                   disabled={!email || !password || isLoading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-2xl font-black shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none mt-2"
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 rounded-2xl font-black text-base shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none mt-6"
                 >
-                  {isLoading ? <Loader2 className="animate-spin" size={20} /> : (
-                    <>Sign In <ArrowRight size={20} /></>
+                  {isLoading ? <Loader2 className="animate-spin" size={22} /> : (
+                    <>Sign In <ArrowRight size={22} /></>
                   )}
                 </button>
 
-                <div className="text-center pt-2">
-                  <p className="text-xs text-slate-400">Don't have an account? <button type="button" onClick={() => handleFinalLogin('user', email.split('@')[0] || 'New User', email)} className="text-orange-500 font-bold">Create one</button></p>
+                <div className="text-center pt-4">
+                  <p className="text-sm text-slate-500">Don't have an account? <button type="button" onClick={() => handleFinalLogin('user', email.split('@')[0] || 'New User', email)} className="text-orange-500 font-bold hover:text-orange-600 transition-colors">Create one</button></p>
                 </div>
               </div>
             </form>
@@ -546,51 +575,60 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         {/* FORGOT PASSWORD VIEW */}
         {view === 'forgot_password' && (
             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-               <div className="flex items-center gap-4">
-                  <button onClick={() => setView('email')} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"><ChevronLeft size={24} /></button>
-                  <h3 className="text-xl font-black text-slate-800">Reset Password</h3>
+               <div className="flex items-center gap-4 mb-2">
+                  <button onClick={() => setView('email')} className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-all active:scale-95 shadow-sm"><ChevronLeft size={22} /></button>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Reset Password</h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">We'll send you a reset link</p>
+                  </div>
                </div>
 
                {!resetSent ? (
-                   <form onSubmit={handleResetPassword} className="space-y-4">
-                        <p className="text-sm text-slate-500 font-medium">Enter your email address and we'll send you a link to reset your password.</p>
-                        
-                        <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
-                                <Mail size={20} />
-                            </div>
-                            <input 
-                                type="email" 
-                                value={resetEmail}
-                                onChange={(e) => setResetEmail(e.target.value)}
-                                placeholder="Email Address"
-                                className="w-full p-4 pl-12 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all"
-                                autoFocus
-                            />
+                   <form onSubmit={handleResetPassword} className="space-y-6">
+                        <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
+                          <p className="text-sm text-blue-900 font-medium leading-relaxed">Enter your email address and we'll send you a secure link to reset your password.</p>
                         </div>
 
-                        <button 
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-2 block ml-1">Email Address</label>
+                          <div className="relative group">
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
+                                  <Mail size={20} />
+                              </div>
+                              <input
+                                  type="email"
+                                  value={resetEmail}
+                                  onChange={(e) => setResetEmail(e.target.value)}
+                                  placeholder="you@example.com"
+                                  className="w-full p-4 pl-12 bg-slate-50 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                                  autoFocus
+                              />
+                          </div>
+                        </div>
+
+                        <button
                             type="submit"
                             disabled={!resetEmail || isLoading}
-                            className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+                            className="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white p-4 rounded-2xl font-black shadow-xl shadow-slate-900/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none mt-4"
                         >
-                            {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Send Reset Link'}
+                            {isLoading ? <Loader2 className="animate-spin" size={22} /> : 'Send Reset Link'}
                         </button>
                    </form>
                ) : (
-                   <div className="text-center py-6 animate-in zoom-in-95 duration-300">
-                       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-sm">
-                           <Check size={40} />
+                   <div className="text-center py-8 animate-in zoom-in-95 duration-300">
+                       <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-2xl shadow-green-500/40">
+                           <Check size={48} strokeWidth={3} />
                        </div>
-                       <h4 className="text-xl font-black text-slate-800 mb-2">Check your email</h4>
-                       <p className="text-sm text-slate-500 mb-8 font-medium leading-relaxed">
-                           We've sent password reset instructions to <br/><span className="text-slate-900 font-bold">{resetEmail}</span>
+                       <h4 className="text-2xl font-black text-slate-900 mb-3">Check your email</h4>
+                       <p className="text-sm text-slate-600 mb-2 font-medium leading-relaxed px-4">
+                           We've sent password reset instructions to:
                        </p>
-                       <button 
+                       <p className="text-base text-slate-900 font-bold mb-8 px-4">{resetEmail}</p>
+                       <button
                            onClick={() => setView('email')}
-                           className="w-full bg-slate-100 text-slate-700 p-4 rounded-2xl font-bold hover:bg-slate-200 transition-colors"
+                           className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 p-4 rounded-2xl font-bold transition-all active:scale-[0.98] shadow-sm"
                        >
-                           Back to Login
+                           Back to Sign In
                        </button>
                    </div>
                )}
@@ -600,57 +638,73 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         {/* PHONE LOGIN VIEW */}
         {view === 'phone' && (
             <form onSubmit={step === 'request' ? handleSendOtp : handleVerifyOtp} className="space-y-6 animate-in slide-in-from-right duration-300">
-               <div className="flex items-center gap-4">
-                  <button type="button" onClick={() => { setView('menu'); setStep('request'); setOtp(''); }} className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"><ChevronLeft size={24} /></button>
-                  <h3 className="text-xl font-black text-slate-800">Phone Login</h3>
+               <div className="flex items-center gap-4 mb-2">
+                  <button type="button" onClick={() => { setView('menu'); setStep('request'); setOtp(''); }} className="w-11 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-all active:scale-95 shadow-sm"><ChevronLeft size={22} /></button>
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Phone Sign In</h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Secure authentication via SMS</p>
+                  </div>
                </div>
 
                {step === 'request' ? (
-                 <div className="space-y-4">
-                    <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors">
-                            <Phone size={20} />
-                        </div>
-                        <input 
-                          type="tel" 
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          placeholder="(555) 000-0000"
-                          className="w-full p-4 pl-12 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all"
-                          autoFocus
-                        />
+                 <div className="space-y-6">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
+                      <p className="text-sm text-blue-900 font-medium leading-relaxed">Enter your phone number and we'll send you a secure verification code.</p>
                     </div>
-                    <p className="text-xs text-slate-400 font-medium px-1">We'll send you a verification code.</p>
-                    <button 
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-2 block ml-1">Phone Number</label>
+                      <div className="relative group">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10">
+                              <Phone size={20} />
+                          </div>
+                          <input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="+1 (555) 000-0000"
+                            className="w-full p-4 pl-12 bg-slate-50 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                            autoFocus
+                          />
+                      </div>
+                    </div>
+
+                    <button
                       type="submit"
                       disabled={isLoading || phoneNumber.length < 5}
-                      className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                      className="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white p-4 rounded-2xl font-black shadow-xl shadow-slate-900/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none mt-2"
                     >
-                      {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Send Code'}
+                      {isLoading ? <Loader2 className="animate-spin" size={22} /> : 'Send Verification Code'}
                     </button>
                  </div>
                ) : (
-                 <div className="space-y-4">
-                    <div className="text-center mb-6">
-                       <p className="text-sm text-slate-500 font-medium">Enter code sent to <span className="text-slate-800 font-bold">{phoneNumber}</span></p>
+                 <div className="space-y-6">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 text-center">
+                       <p className="text-sm text-green-900 font-medium leading-relaxed">We sent a 6-digit code to</p>
+                       <p className="text-base text-green-900 font-bold mt-1">{phoneNumber}</p>
                     </div>
-                    
-                    <input 
-                      type="text" 
-                      value={otp}
-                      maxLength={6}
-                      onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="000000"
-                      className="w-full p-4 text-center text-3xl tracking-[0.5em] bg-slate-50 border border-slate-100 rounded-2xl font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all"
-                      autoFocus
-                    />
-                    
-                    <button 
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 mb-2 block text-center">Verification Code</label>
+                      <input
+                        type="text"
+                        value={otp}
+                        maxLength={6}
+                        onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="000000"
+                        className="w-full p-5 text-center text-4xl tracking-[0.5em] bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-slate-800 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all"
+                        autoFocus
+                      />
+                    </div>
+
+                    <button
                       type="submit"
                       disabled={isLoading || otp.length < 6}
-                      className="w-full bg-green-500 text-white p-4 rounded-2xl font-black shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white p-4 rounded-2xl font-black shadow-xl shadow-green-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:shadow-none mt-4"
                     >
-                      {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Verify & Login'}
+                      {isLoading ? <Loader2 className="animate-spin" size={22} /> : (
+                        <>Verify & Sign In <Check size={22} /></>
+                      )}
                     </button>
                  </div>
                )}
