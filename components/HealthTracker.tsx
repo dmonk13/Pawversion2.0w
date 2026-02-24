@@ -72,7 +72,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 6;
   const listRef = useRef<HTMLDivElement>(null);
 
   // Modals & Selection
@@ -513,7 +513,7 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
              <div className="max-w-5xl mx-auto">
                {isLoadingVets ? (
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                   {[1, 2, 3].map(i => (
+                   {[1, 2, 3, 4, 5, 6].map(i => (
                      <div key={i} className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 animate-pulse">
                         <div className="flex justify-between mb-4">
                             <div className="w-2/3 h-5 bg-slate-100 rounded-md"></div>
@@ -532,9 +532,9 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                  <div className="space-y-4">
                    {currentVets.length > 0 ? (
                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {currentVets.map((vet, idx) => (
-                        <div key={idx} className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 transition-all hover:shadow-lg group relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
+                        <div key={idx} className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 transition-all hover:shadow-lg hover:border-blue-200 group relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
                             <div className="flex justify-between items-start mb-3">
                             <div>
                                 <h4 className="font-black text-slate-800 text-lg leading-tight mb-1">{vet.name}</h4>
@@ -588,23 +588,35 @@ const HealthTracker: React.FC<Props> = ({ pets, logs, onAddLog }) => {
                         </div>
 
                         {totalPages > 1 && (
-                            <div className="flex justify-center items-center gap-4 mt-6 pt-2 pb-6">
+                            <div className="flex justify-center items-center gap-3 mt-8 pt-4 pb-6">
                                 <button
                                     onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                                     disabled={currentPage === 1}
-                                    className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${currentPage === 1 ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : 'bg-white text-slate-600 shadow-sm border border-slate-200 hover:border-orange-200 hover:text-orange-500'}`}
+                                    className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${currentPage === 1 ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : 'bg-white text-slate-700 shadow-md border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 active:scale-95'}`}
                                 >
                                     <ChevronLeft size={16} /> Prev
                                 </button>
-                                
-                                <span className="text-xs font-bold text-slate-400">
-                                    {currentPage} / {totalPages}
-                                </span>
+
+                                <div className="flex items-center gap-2">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(page)}
+                                            className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${
+                                                currentPage === page
+                                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                                    : 'bg-white text-slate-400 border border-slate-200 hover:border-blue-300 hover:text-blue-500'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
 
                                 <button
                                     onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                                     disabled={currentPage === totalPages}
-                                    className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${currentPage === totalPages ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800'}`}
+                                    className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${currentPage === totalPages ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-95'}`}
                                 >
                                     Next <ChevronRight size={16} />
                                 </button>
