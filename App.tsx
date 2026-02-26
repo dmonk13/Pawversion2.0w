@@ -1191,17 +1191,17 @@ const ProPlanModal = ({ onClose, onUpgrade, userPlan }: any) => {
 const AddPetModal = ({ onClose, onSubmit, initialData }: any) => {
   const [activeSubTab, setActiveSubTab] = useState<'edit' | 'health' | 'passport'>('edit');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [formData, setFormData] = useState(initialData || { 
-      name: '', 
-      species: 'Dog', 
-      breed: '', 
-      sex: 'Male', 
-      age: '', 
-      weight: '', 
-      origin: '', 
-      bio: '', 
-      image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=400&q=80',
-      temperament: [] 
+  const [formData, setFormData] = useState(initialData || {
+      name: '',
+      species: 'Dog',
+      breed: '',
+      sex: 'Male',
+      age: '',
+      weight: '',
+      origin: '',
+      bio: '',
+      image: '',
+      temperament: []
   });
   
   const [tempTags, setTempTags] = useState(initialData?.temperament?.join(', ') || '');
@@ -1300,25 +1300,24 @@ const AddPetModal = ({ onClose, onSubmit, initialData }: any) => {
                     {/* Photo & Basics */}
                     <div className="flex flex-col sm:flex-row gap-6 items-start">
                         <div className="flex flex-col items-center gap-3 shrink-0 mx-auto sm:mx-0">
-                            <div 
-                                className="w-28 h-28 rounded-[2rem] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl relative group bg-slate-100 dark:bg-slate-800 cursor-pointer"
+                            <div
+                                className="w-28 h-28 rounded-[2rem] overflow-hidden border-4 border-slate-200 dark:border-slate-700 shadow-xl relative group bg-slate-100 dark:bg-slate-800 cursor-pointer hover:border-orange-300 dark:hover:border-orange-600 transition-colors"
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <img src={formData.image} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera size={28} className="text-white drop-shadow-md" />
-                                </div>
+                                {formData.image && formData.image !== '' ? (
+                                    <>
+                                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Camera size={28} className="text-white drop-shadow-md" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Camera size={32} className="text-slate-400 dark:text-slate-500" />
+                                    </div>
+                                )}
                             </div>
                             <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
-                            <div className="relative w-full">
-                                <input 
-                                   type="text" 
-                                   placeholder="Paste Image URL" 
-                                   value={formData.image}
-                                   onChange={(e) => handleChange('image', e.target.value)}
-                                   className="w-full text-[10px] bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1.5 text-center text-slate-500 font-bold focus:ring-2 focus:ring-orange-500/20 outline-none"
-                                />
-                            </div>
                         </div>
 
                         <div className="flex-1 space-y-5 w-full">
