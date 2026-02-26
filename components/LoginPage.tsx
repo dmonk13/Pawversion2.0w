@@ -302,6 +302,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       {/* Dark Overlay gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/90"></div>
 
+      {/* --- SERVER STATUS ICON --- */}
+      <div className="absolute top-0 left-0 p-6 z-20">
+         <div className={`p-2.5 rounded-full backdrop-blur-md border transition-colors duration-500 ${
+           serverStatus === 'online' ? 'bg-green-500/20 border-green-500/30 text-green-300' :
+           serverStatus === 'offline' ? 'bg-red-500/20 border-red-500/30 text-red-300' : 'bg-white/10 border-white/20 text-white/50'
+         }`}>
+            {serverStatus === 'online' ? <Wifi size={16} /> : <WifiOff size={16} />}
+         </div>
+      </div>
 
       {/* --- CONFIG MODAL (Unchanged Logic) --- */}
       {isConfigOpen && (
