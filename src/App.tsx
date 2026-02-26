@@ -77,6 +77,7 @@ import AIAdvisor from './components/AIAdvisor';
 import Community from './components/Community';
 import Matches from './components/Matches';
 import LoginPage from './components/LoginPage';
+import PaymentPage from './components/PaymentPage';
 
 // --- INITIAL SAMPLE DATA (For Demo User) ---
 const INITIAL_PETS: Pet[] = [
@@ -152,6 +153,7 @@ const App: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isPaymentPageOpen, setIsPaymentPageOpen] = useState(false);
   const [isAddPetOpen, setIsAddPetOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [userPlan, setUserPlan] = useState<'Free' | 'Pro'>('Free');
@@ -474,8 +476,13 @@ const App: React.FC = () => {
     setIsAddPetOpen(true);
   };
 
-  const handleUpgrade = () => {
+  const handleOpenPayment = () => {
     setIsProModalOpen(false);
+    setIsPaymentPageOpen(true);
+  };
+
+  const handleUpgrade = () => {
+    setIsPaymentPageOpen(false);
     setUserPlan('Pro');
     showNotification("Upgraded to Pro! Enjoy!");
   };
@@ -732,7 +739,11 @@ const App: React.FC = () => {
 
       {/* Pro Plan Modal */}
       {isProModalOpen && (
-        <ProPlanModal onClose={() => setIsProModalOpen(false)} onUpgrade={handleUpgrade} userPlan={userPlan} />
+        <ProPlanModal onClose={() => setIsProModalOpen(false)} onUpgrade={handleUpgrade} userPlan={userPlan} onOpenPayment={handleOpenPayment} />
+      )}
+
+      {isPaymentPageOpen && (
+        <PaymentPage onClose={() => setIsPaymentPageOpen(false)} onSuccess={handleUpgrade} />
       )}
 
       {/* Add/Edit Pet Modal */}
@@ -1113,14 +1124,14 @@ const SettingsSidebar = ({ onClose, onLogout, onDelete, onPause, onOpenPro, onUp
   );
 };
 
-const ProPlanModal = ({ onClose, onUpgrade, userPlan }: any) => {
+const ProPlanModal = ({ onClose, onUpgrade, userPlan, onOpenPayment }: any) => {
   return (
     <div className="fixed inset-0 z-[150] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
         <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-8 relative shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300">
             <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
                 <X size={20} />
             </button>
-            
+
             <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-gradient-to-tr from-orange-400 to-pink-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-500/30 transform rotate-6">
                     <Crown size={40} className="text-white" />
@@ -1151,14 +1162,14 @@ const ProPlanModal = ({ onClose, onUpgrade, userPlan }: any) => {
                     You are already a Pro member!
                 </div>
             ) : (
-                <button 
-                    onClick={onUpgrade}
+                <button
+                    onClick={onOpenPayment}
                     className="w-full py-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-2xl font-black text-lg shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
-                    <Sparkles size={20} fill="currentColor" /> Upgrade Now - $9.99/mo
+                    <Sparkles size={20} fill="currentColor" /> Upgrade Now - ₹89/mo
                 </button>
             )}
-            
+
             <p className="text-center text-[10px] text-slate-400 font-bold mt-4 uppercase tracking-widest">Cancel anytime. Secure payment.</p>
         </div>
     </div>
