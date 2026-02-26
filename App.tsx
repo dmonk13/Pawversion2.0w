@@ -76,7 +76,6 @@ import AIAdvisor from './components/AIAdvisor';
 import Community from './components/Community';
 import Matches from './components/Matches';
 import LoginPage from './components/LoginPage';
-import { supabase } from './lib/supabase';
 
 // --- INITIAL SAMPLE DATA (For Demo User) ---
 const INITIAL_PETS: Pet[] = [
@@ -224,52 +223,6 @@ const App: React.FC = () => {
      }
   ]);
   const [activeMatchId, setActiveMatchId] = useState<string | undefined>(undefined);
-
-  // Check for existing session and OAuth callback
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        const userName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
-        const userEmail = session.user.email || '';
-        const userImage = session.user.user_metadata?.avatar_url;
-
-        setUserProfile({
-          name: userName,
-          identifier: userEmail,
-          type: 'user',
-          image: userImage
-        });
-        setIsAuthenticated(true);
-      }
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const userName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User';
-        const userEmail = session.user.email || '';
-        const userImage = session.user.user_metadata?.avatar_url;
-
-        setUserProfile({
-          name: userName,
-          identifier: userEmail,
-          type: 'user',
-          image: userImage
-        });
-        setIsAuthenticated(true);
-      } else if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-        setUserProfile(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   // Theme Effect
   useEffect(() => {
@@ -425,14 +378,9 @@ const App: React.FC = () => {
       }
   };
 
-  const executeLogout = async () => {
+  const executeLogout = () => {
     setIsSettingsOpen(false);
     setActionModal(null);
-
-    if (userProfile?.type === 'user') {
-      await supabase.auth.signOut();
-    }
-
     setIsAuthenticated(false);
     setUserProfile(null);
     setPets([]);
