@@ -144,12 +144,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       ))}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/90"></div>
 
-      <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20">
-         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border transition-colors duration-500 bg-green-500/20 border-green-500/30 text-green-300`}>
-            <Wifi size={10} />
-            <span className="text-[10px] font-bold uppercase tracking-wider">
-               Ready
-            </span>
+      <div className="absolute top-0 left-0 p-6 z-20">
+         <div className="p-2 rounded-full backdrop-blur-md bg-green-500/20 border border-green-500/30">
+            <Wifi size={16} className="text-green-300" />
          </div>
       </div>
 
