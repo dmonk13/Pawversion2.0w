@@ -299,6 +299,7 @@ const Community: React.FC<CommunityProps> = ({ onMatch, userType = 'user' }) => 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
      ageMax: 20,
+     distanceMax: 150,
      breed: 'All',
      medical: 'All'
   });
@@ -458,6 +459,13 @@ const Community: React.FC<CommunityProps> = ({ onMatch, userType = 'user' }) => 
       }
       const petAgeNum = parseInt(pet.age);
       if (petAgeNum > advancedFilters.ageMax) return false;
+
+      // Distance filter
+      const distanceValue = parseFloat(pet.distance);
+      if (!isNaN(distanceValue)) {
+        const distanceInKm = pet.distance.includes('m') ? distanceValue / 1000 : distanceValue;
+        if (distanceInKm > advancedFilters.distanceMax) return false;
+      }
 
       if (advancedFilters.breed !== 'All' && !pet.breed.includes(advancedFilters.breed)) return false;
 
@@ -643,7 +651,7 @@ const Community: React.FC<CommunityProps> = ({ onMatch, userType = 'user' }) => 
               </p>
               {communityPets.length > 0 && (
                 <button
-                  onClick={() => { setFilter('All'); setSwipedIds(new Set()); setAdvancedFilters({ageMax: 20, breed: 'All', medical: 'All'}); }}
+                  onClick={() => { setFilter('All'); setSwipedIds(new Set()); setAdvancedFilters({ageMax: 20, distanceMax: 150, breed: 'All', medical: 'All'}); }}
                   className={`mt-6 px-8 py-3 bg-${themeColor}-500 text-white rounded-2xl font-black shadow-lg shadow-${themeColor}-500/20`}
                 >
                   Reset
@@ -735,6 +743,26 @@ const Community: React.FC<CommunityProps> = ({ onMatch, userType = 'user' }) => 
                    <div className="flex justify-between text-[10px] font-bold text-slate-300 uppercase">
                       <span>1 yr</span>
                       <span>20 yrs</span>
+                   </div>
+                </div>
+
+                {/* Distance Filter */}
+                <div className="space-y-3">
+                   <div className="flex justify-between items-center">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Max Distance</label>
+                     <span className="px-2 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-800">{advancedFilters.distanceMax} km</span>
+                   </div>
+                   <input
+                    type="range"
+                    min="1"
+                    max="150"
+                    value={advancedFilters.distanceMax}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, distanceMax: parseInt(e.target.value)})}
+                    className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer"
+                   />
+                   <div className="flex justify-between text-[10px] font-bold text-slate-300 uppercase">
+                      <span>1 km</span>
+                      <span>150 km</span>
                    </div>
                 </div>
 
