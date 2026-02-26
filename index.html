@@ -2,11 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#f97316">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PawPal Mobile</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -23,30 +19,13 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      -webkit-overflow-scrolling: touch;
-    }
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-    }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       overscroll-behavior-y: contain;
       -webkit-tap-highlight-color: transparent;
     }
-    #root {
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
-    }
     .safe-bottom {
       padding-bottom: env(safe-area-inset-bottom);
-    }
-    .pb-safe {
-      padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
     .no-scrollbar::-webkit-scrollbar {
       display: none;
@@ -54,21 +33,6 @@
     .no-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
-    }
-    @supports (height: 100dvh) {
-      #root {
-        height: 100dvh;
-      }
-    }
-    @media (max-width: 768px) {
-      body {
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-      }
-    }
-    input, textarea, select {
-      -webkit-user-select: text;
-      user-select: text;
     }
   </style>
 <script type="importmap">
