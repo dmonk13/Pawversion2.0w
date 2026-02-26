@@ -571,7 +571,7 @@ const App: React.FC = () => {
   const isChatActive = activeTab === 'matches' && activeMatchId !== undefined;
 
   return (
-    <div className="flex h-screen w-full bg-white dark:bg-slate-950 font-sans transition-colors duration-300 overflow-hidden">
+    <div className="flex h-screen w-full bg-white dark:bg-slate-950 font-sans transition-colors duration-300 overflow-hidden md:overflow-hidden">
       
       {/* Toast Notification */}
       {toast && (
@@ -628,7 +628,7 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full relative w-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full md:h-full relative w-full overflow-hidden md:overflow-hidden">
         
         {/* Header - Sticky on Mobile, Integrated on Desktop */}
         <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 shrink-0 transition-colors duration-300 shadow-sm md:hidden">
@@ -668,7 +668,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Main Content Render */}
-        <main className={`flex-1 transition-colors duration-300 relative w-full mx-auto ${isChatActive ? 'overflow-hidden h-full' : 'overflow-y-auto pb-24 md:pb-8 no-scrollbar bg-slate-50/50 dark:bg-slate-950/50'}`}>
+        <main className={`flex-1 transition-colors duration-300 relative w-full mx-auto ${isChatActive ? 'overflow-hidden h-full' : 'overflow-y-auto pb-28 md:pb-8 no-scrollbar bg-slate-50/50 dark:bg-slate-950/50'}`}>
           <div className="h-full w-full max-w-7xl mx-auto md:px-6">
              {renderContent()}
           </div>
@@ -676,7 +676,7 @@ const App: React.FC = () => {
 
         {/* Bottom Navigation (Mobile Only) */}
         {!isChatActive && (
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800 px-4 py-3 pb-safe flex justify-between items-center z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] transition-colors duration-300">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800 px-4 py-3 flex justify-between items-center z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] transition-colors duration-300" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
               <NavButton active={activeTab === 'home'} onClick={() => { setActiveTab('home'); setSelectedPetId(null); }} icon={<Layout size={22} />} label="Home" />
               <NavButton active={activeTab === 'pets'} onClick={() => { setActiveTab('pets'); setSelectedPetId(null); }} icon={<Dog size={22} />} label="Family" />
               <div className="relative -top-6">
@@ -1290,7 +1290,7 @@ const AddPetModal = ({ onClose, onSubmit, initialData }: any) => {
 
   return (
     <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-       <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col">
+       <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-300 max-h-[90vh] max-h-[90dvh] overflow-y-auto shadow-2xl relative flex flex-col">
           
           <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full transition-colors z-20">
              <X size={20} />
