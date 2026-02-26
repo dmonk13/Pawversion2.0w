@@ -627,6 +627,12 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            {userPlan === 'Free' && (
+              <button onClick={() => setIsProModalOpen(true)} className="px-3 py-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-orange-500/20 hover:scale-105 transition-all flex items-center gap-1.5">
+                <Crown size={14} fill="currentColor" />
+                Upgrade
+              </button>
+            )}
             <button onClick={() => setIsNotificationsOpen(true)} className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400 hover:text-orange-500 transition-all relative">
               <Bell size={18} />
               <span className="absolute top-2.5 right-3 w-2 h-2 bg-red-500 border-2 border-white dark:border-slate-800 rounded-full animate-pulse"></span>
@@ -647,6 +653,12 @@ const App: React.FC = () => {
         <div className="hidden md:flex items-center justify-between px-8 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-30 shrink-0">
            <h2 className="text-2xl font-black text-slate-900 dark:text-white capitalize tracking-tight">{activeTab === 'home' ? 'Dashboard' : activeTab.replace(/([A-Z])/g, ' $1').trim()}</h2>
            <div className="flex items-center gap-4">
+              {userPlan === 'Free' && (
+                <button onClick={() => setIsProModalOpen(true)} className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 hover:scale-105 transition-all flex items-center gap-2">
+                  <Crown size={16} fill="currentColor" />
+                  Upgrade to Pro
+                </button>
+              )}
               <button onClick={() => setIsNotificationsOpen(true)} className="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-400 hover:text-orange-500 hover:border-orange-200 transition-all relative shadow-sm">
                  <Bell size={18} />
                  <span className="absolute top-2.5 right-3 w-2 h-2 bg-red-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
