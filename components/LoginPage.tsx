@@ -202,9 +202,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           if (googleClientId) {
              alert("Google Sign-In is configured but not fully loaded yet. Please wait a moment.");
           } else {
-             // No configuration - open config modal directly
-             setIsConfigOpen(true);
-             setTempClientId('');
+             // No configuration - open config modal to prompt setup
+             alert("To use real Google Sign-In, please configure your Google Client ID in the settings (gear icon at top right).\n\nFor now, you can use the demo mode.");
+             setView('google_sim');
           }
       }
   };
@@ -310,15 +310,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       {/* Dark Overlay gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/90"></div>
 
-      {/* --- CONFIG BUTTON (ALWAYS VISIBLE ON ALL DEVICES) --- */}
-      <div className="absolute top-0 right-0 p-4 md:p-6 z-20">
-         <button
-           onClick={() => { setTempClientId(googleClientId); setIsConfigOpen(true); }}
-           className="p-3 md:p-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors border border-white/10 shadow-lg"
-           aria-label="Settings"
-         >
-             <Settings size={20} className="md:w-[18px] md:h-[18px]" />
-         </button>
+      {/* --- SERVER STATUS ICON --- */}
+      <div className="absolute top-0 left-0 p-6 z-20">
+         <div className={`p-2.5 rounded-full backdrop-blur-md border transition-colors duration-500 ${
+           serverStatus === 'online' ? 'bg-green-500/20 border-green-500/30 text-green-300' :
+           serverStatus === 'offline' ? 'bg-red-500/20 border-red-500/30 text-red-300' : 'bg-white/10 border-white/20 text-white/50'
+         }`}>
+            {serverStatus === 'online' ? <Wifi size={16} /> : <WifiOff size={16} />}
+         </div>
       </div>
 
       {/* --- CONFIG MODAL (Unchanged Logic) --- */}
