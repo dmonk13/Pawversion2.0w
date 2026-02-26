@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Pet, ChatMessage } from '../types';
 import { Send, Sparkles, User, Brain, Heart, Info, Camera, Bot } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 interface Props {
   pets: Pet[];
 }
-
-// Replace this with your actual Render URL after deployment
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 
 const AIAdvisor: React.FC<Props> = ({ pets }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -38,22 +36,33 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     setIsLoading(true);
 
     try {
-      // Call the backend API instead of Google SDK directly
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: textToSend }],
-          pets: pets
-        }),
+      // Use Gemini API directly for faster response
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+      // Build context with pet information
+      const petContext = pets.map(p =>
+        `${p.name} (${p.breed}, ${p.age} years old, ${p.weight}kg)`
+      ).join(', ');
+
+      const systemPrompt = `You are Dr. Paw, a friendly and expert veterinary AI assistant for PawPal. You're helping care for these pets: ${petContext}. Provide helpful, caring, and professional advice. Keep responses concise and friendly.`;
+
+      // Convert messages to Gemini format
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role === 'model' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
+
+      // Use gemini-2.0-flash-exp for fastest response
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        systemInstruction: systemPrompt,
+        contents: [
+          ...conversationHistory,
+          { role: 'user', parts: [{ text: textToSend }] }
+        ],
       });
 
-      if (!response.ok) throw new Error('Backend request failed');
-
-      const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', content: data.text || "I'm processing that. One moment!" }]);
+      setMessages(prev => [...prev, { role: 'model', content: response.text || "I'm processing that. One moment!" }]);
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'model', content: "My connection to the PawPal servers is a bit fuzzy. Let's try again!" }]);
