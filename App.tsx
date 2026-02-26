@@ -190,36 +190,16 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<HealthLog[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   
-  // MATCHES STATE WITH SAMPLE DATA
+  // MATCHES STATE - Starts with only AI assistant
   const [matches, setMatches] = useState<Match[]>([
-     { 
-         id: 'ai_expert', 
-         name: 'Dr. Paw', 
-         image: '', 
+     {
+         id: 'ai_expert',
+         name: 'Dr. Paw',
+         image: '',
          type: 'ai',
          lastMessage: 'How can I help you today?',
          lastMessageTime: 'Now',
          unread: true
-     },
-     {
-         id: 'm1',
-         name: 'Cooper', 
-         image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80',
-         type: 'pet',
-         breed: 'Golden Retriever',
-         lastMessage: 'Woof! When are we playing? 🦴',
-         lastMessageTime: '10m',
-         unread: true
-     },
-     {
-         id: 'm2',
-         name: 'Bella',
-         image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=200&q=80',
-         type: 'pet',
-         breed: 'French Bulldog',
-         lastMessage: 'See you at the park tomorrow!',
-         lastMessageTime: '1h',
-         unread: false
      }
   ]);
   const [activeMatchId, setActiveMatchId] = useState<string | undefined>(undefined);

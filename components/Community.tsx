@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Heart, 
-  MapPin, 
-  Zap, 
-  SlidersHorizontal, 
-  ChevronRight, 
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  Heart,
+  MapPin,
+  Zap,
+  SlidersHorizontal,
+  ChevronRight,
   Check,
   Star,
   Bone,
@@ -21,79 +21,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { DiscoverPet } from '../types';
-
-const SAMPLE_DATA: DiscoverPet[] = [
-  {
-    id: 'd1',
-    name: 'Cooper',
-    breed: 'Golden Retriever',
-    age: '2 yrs',
-    energy: 'High',
-    distance: '1.2 km',
-    image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=500&q=80',
-    bio: 'Super friendly and loves to play fetch till the sun goes down!',
-    tags: ['Active', 'Kid-friendly'],
-    gender: 'Male',
-    status: 'Intact',
-    medicalHistory: ['Fully Vaccinated', 'No Allergies']
-  },
-  {
-    id: 'd2',
-    name: 'Bella',
-    breed: 'French Bulldog',
-    age: '1 yr',
-    energy: 'Low',
-    distance: '0.8 km',
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=500&q=80',
-    bio: 'Professional napper looking for a quiet walk in the park.',
-    tags: ['Calm', 'City-dweller'],
-    gender: 'Female',
-    status: 'Neutered',
-    medicalHistory: ['Vaccinated', 'Sensitive Stomach']
-  },
-  {
-    id: 'd3',
-    name: 'Rocky',
-    breed: 'Siberian Husky',
-    age: '3 yrs',
-    energy: 'High',
-    distance: '3.5 km',
-    image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=500&q=80',
-    bio: 'Adventurous spirit. I love hiking and cold weather!',
-    tags: ['Athletic', 'Talkative'],
-    gender: 'Male',
-    status: 'Intact',
-    medicalHistory: ['Fully Vaccinated']
-  },
-  {
-    id: 'd4',
-    name: 'Mochi',
-    breed: 'Corgi',
-    age: '4 yrs',
-    energy: 'Medium',
-    distance: '2.1 km',
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=500&q=80',
-    bio: 'I may have short legs, but I have a big heart and lots of speed!',
-    tags: ['Playful', 'Smart'],
-    gender: 'Female',
-    status: 'Intact',
-    medicalHistory: ['Vaccinated', 'Hip Dysplasia Monitored']
-  },
-  {
-    id: 'd5',
-    name: 'Daisy',
-    breed: 'Labradoodle',
-    age: '2 yrs',
-    energy: 'Medium',
-    distance: '0.5 km',
-    image: 'https://images.unsplash.com/photo-1591768793355-74d7af236c17?auto=format&fit=crop&w=500&q=80',
-    bio: 'Hypoallergenic and highly sociable. Let\'s grab a puppuccino!',
-    tags: ['Social', 'Non-shedding'],
-    gender: 'Female',
-    status: 'Neutered',
-    medicalHistory: ['Fully Vaccinated', 'Nut Allergy']
-  }
-];
 
 interface PetCardProps {
   pet: DiscoverPet;
@@ -302,6 +229,120 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
      medical: 'All'
   });
 
+  // Database state
+  const [communityPets, setCommunityPets] = useState<DiscoverPet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{lat: number; lon: number} | null>(null);
+
+  // Fetch community pets from database
+  useEffect(() => {
+    fetchCommunityPets();
+    getUserLocation();
+  }, [mode]);
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Location access denied, using default');
+          setUserLocation(null);
+        }
+      );
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  const fetchCommunityPets = async () => {
+    setIsLoading(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('Supabase credentials not found');
+        setCommunityPets([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const headers = {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      };
+
+      // Build query based on mode
+      let query = `${supabaseUrl}/rest/v1/community_pets?select=*`;
+
+      if (mode === 'Play') {
+        query += '&available_for_play=eq.true';
+      } else {
+        query += '&available_for_mating=eq.true&status=eq.Intact';
+      }
+
+      const response = await fetch(query, { headers });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch community pets');
+      }
+
+      const data = await response.json();
+
+      // Transform database records to DiscoverPet format
+      const transformedPets: DiscoverPet[] = data.map((pet: any) => {
+        let distance = 'Unknown';
+        if (userLocation && pet.latitude && pet.longitude) {
+          const dist = calculateDistance(
+            userLocation.lat,
+            userLocation.lon,
+            parseFloat(pet.latitude),
+            parseFloat(pet.longitude)
+          );
+          distance = dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`;
+        }
+
+        return {
+          id: pet.id,
+          name: pet.name,
+          breed: pet.breed,
+          age: `${pet.age} yr${pet.age !== 1 ? 's' : ''}`,
+          energy: pet.energy_level,
+          distance,
+          image: pet.image_url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=500&q=80',
+          bio: pet.bio || `Meet ${pet.name}, a friendly ${pet.breed}!`,
+          tags: pet.tags || [],
+          gender: pet.gender,
+          status: pet.status,
+          medicalHistory: pet.medical_history || []
+        };
+      });
+
+      setCommunityPets(transformedPets);
+    } catch (error) {
+      console.error('Error fetching community pets:', error);
+      setCommunityPets([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const FILTERS = useMemo(() => {
     return mode === 'Play' 
       ? ['All', 'Low Energy', 'High Energy'] 
@@ -309,16 +350,16 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
   }, [mode]);
 
   const availableBreeds = useMemo(() => {
-      const breeds = new Set(SAMPLE_DATA.map(p => p.breed));
+      const breeds = new Set(communityPets.map(p => p.breed));
       return ['All', ...Array.from(breeds)];
-  }, []);
+  }, [communityPets]);
 
   const medicalOptions = ['All', 'Fully Vaccinated', 'No Allergies', 'Specific Conditions'];
 
   const filteredPets = useMemo(() => {
-    return SAMPLE_DATA.filter(pet => {
+    return communityPets.filter(pet => {
       if (swipedIds.has(pet.id)) return false;
-      if (mode === 'Mate' && pet.status === 'Neutered') return false; 
+      if (mode === 'Mate' && pet.status === 'Neutered') return false;
       if (filter !== 'All') {
           if (mode === 'Play') {
              if (filter === 'Low Energy' && pet.energy !== 'Low') return false;
@@ -330,7 +371,7 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
       }
       const petAgeNum = parseInt(pet.age);
       if (petAgeNum > advancedFilters.ageMax) return false;
-      
+
       if (advancedFilters.breed !== 'All' && !pet.breed.includes(advancedFilters.breed)) return false;
 
       if (advancedFilters.medical !== 'All') {
@@ -344,20 +385,20 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
               if (conditions.length === 0) return false;
           }
       }
-      
+
       return true;
     });
-  }, [filter, mode, advancedFilters, swipedIds]);
+  }, [filter, mode, advancedFilters, swipedIds, communityPets]);
 
   const spotlightPets = useMemo(() => {
      if (mode === 'Mate') {
-        return SAMPLE_DATA.filter(p => p.status === 'Intact' && p.gender === 'Female').slice(0, 3);
+        return communityPets.filter(p => p.status === 'Intact' && p.gender === 'Female').slice(0, 3);
      }
-     return SAMPLE_DATA.slice(0, 3);
-  }, [mode]);
+     return communityPets.slice(0, 3);
+  }, [mode, communityPets]);
 
   const handlePetAction = (id: string, direction: 'left' | 'right') => {
-    const pet = SAMPLE_DATA.find(p => p.id === id);
+    const pet = communityPets.find(p => p.id === id);
     if (direction === 'right') {
         if (woofsLeft > 0) setWoofsLeft(prev => prev - 1);
         // Simulate Match
@@ -481,16 +522,21 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
 
       {/* Main Content */}
       <div className="p-6 space-y-6 pb-32">
-        {activeView === 'Discover' ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            <p className="text-slate-400 text-sm mt-4 font-bold">Finding nearby pets...</p>
+          </div>
+        ) : activeView === 'Discover' ? (
           filteredPets.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPets.map((pet) => (
-              <PetCard 
-                key={pet.id} 
-                pet={pet} 
-                mode={mode} 
-                onProfile={setSelectedProfile} 
-                onSwipe={handlePetAction} 
+              <PetCard
+                key={pet.id}
+                pet={pet}
+                mode={mode}
+                onProfile={setSelectedProfile}
+                onSwipe={handlePetAction}
               />
             ))}
             </div>
@@ -499,53 +545,76 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
               <div className={`w-20 h-20 bg-${themeColor}-50 rounded-full flex items-center justify-center mb-4`}>
                  <Search size={32} className={`text-${themeColor}-200`} />
               </div>
-              <h3 className="text-xl font-black text-slate-800">No Matches Found</h3>
-              <p className="text-slate-400 text-xs mt-2 max-w-[200px]">Try adjusting your filters to find more {mode === 'Play' ? 'pals' : 'partners'}.</p>
-              <button 
-                onClick={() => { setFilter('All'); setSwipedIds(new Set()); setAdvancedFilters({ageMax: 20, breed: 'All', medical: 'All'}); }}
-                className={`mt-6 px-8 py-3 bg-${themeColor}-500 text-white rounded-2xl font-black shadow-lg shadow-${themeColor}-500/20`}
-              >
-                Reset
-              </button>
+              <h3 className="text-xl font-black text-slate-800">
+                {communityPets.length === 0 ? 'No Pets Nearby' : 'No Matches Found'}
+              </h3>
+              <p className="text-slate-400 text-xs mt-2 max-w-[260px]">
+                {communityPets.length === 0
+                  ? `There are no pets in your area yet. Be the first to add your pet to the community!`
+                  : `Try adjusting your filters to find more ${mode === 'Play' ? 'pals' : 'partners'}.`
+                }
+              </p>
+              {communityPets.length > 0 && (
+                <button
+                  onClick={() => { setFilter('All'); setSwipedIds(new Set()); setAdvancedFilters({ageMax: 20, breed: 'All', medical: 'All'}); }}
+                  className={`mt-6 px-8 py-3 bg-${themeColor}-500 text-white rounded-2xl font-black shadow-lg shadow-${themeColor}-500/20`}
+                >
+                  Reset
+                </button>
+              )}
             </div>
           )
         ) : (
           /* Spotlight View */
           <div className="space-y-6 animate-in slide-in-from-right duration-500">
-             {/* Daily Limit Banner */}
-             <div className={`bg-gradient-to-r from-${themeColor}-50 to-slate-50 rounded-2xl p-5 flex justify-between items-center border border-${themeColor}-100`}>
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-${themeColor}-500 shadow-sm`}>
-                    {mode === 'Play' ? <Bone size={24} fill="currentColor" /> : <Heart size={24} fill="currentColor" />}
-                  </div>
-                  <div>
-                    <p className={`text-[10px] font-black uppercase text-${themeColor}-400 tracking-widest`}>Daily Interactions</p>
-                    <p className="text-slate-800 font-bold text-sm">{woofsLeft} {mode === 'Play' ? 'Woofs' : 'Roses'} Left</p>
-                  </div>
-                </div>
-                <div className="text-right hidden sm:block">
-                   <p className={`text-[10px] font-black uppercase text-${themeColor}-400 tracking-widest`}>Resets In</p>
-                   <p className="text-slate-800 font-bold text-sm">12h 30m</p>
-                </div>
-             </div>
+             {spotlightPets.length > 0 ? (
+               <>
+                 {/* Daily Limit Banner */}
+                 <div className={`bg-gradient-to-r from-${themeColor}-50 to-slate-50 rounded-2xl p-5 flex justify-between items-center border border-${themeColor}-100`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-${themeColor}-500 shadow-sm`}>
+                        {mode === 'Play' ? <Bone size={24} fill="currentColor" /> : <Heart size={24} fill="currentColor" />}
+                      </div>
+                      <div>
+                        <p className={`text-[10px] font-black uppercase text-${themeColor}-400 tracking-widest`}>Daily Interactions</p>
+                        <p className="text-slate-800 font-bold text-sm">{woofsLeft} {mode === 'Play' ? 'Woofs' : 'Roses'} Left</p>
+                      </div>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                       <p className={`text-[10px] font-black uppercase text-${themeColor}-400 tracking-widest`}>Resets In</p>
+                       <p className="text-slate-800 font-bold text-sm">12h 30m</p>
+                    </div>
+                 </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {spotlightPets.map((pet) => (
-                <SpotlightCard 
-                    key={pet.id} 
-                    pet={pet} 
-                    woofsLeft={woofsLeft} 
-                    onWoof={(id, msg) => handlePetAction(id, 'right')} 
-                    onProfile={setSelectedProfile}
-                    mode={mode}
-                />
-                ))}
-             </div>
-             
-             <div className="text-center py-8">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">You're all caught up!</p>
-                <p className="text-slate-300 text-[10px] mt-2">Check back tomorrow for new {mode === 'Play' ? 'friends' : 'matches'}.</p>
-             </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {spotlightPets.map((pet) => (
+                    <SpotlightCard
+                        key={pet.id}
+                        pet={pet}
+                        woofsLeft={woofsLeft}
+                        onWoof={(id, msg) => handlePetAction(id, 'right')}
+                        onProfile={setSelectedProfile}
+                        mode={mode}
+                    />
+                    ))}
+                 </div>
+
+                 <div className="text-center py-8">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">You're all caught up!</p>
+                    <p className="text-slate-300 text-[10px] mt-2">Check back tomorrow for new {mode === 'Play' ? 'friends' : 'matches'}.</p>
+                 </div>
+               </>
+             ) : (
+               <div className="flex flex-col items-center justify-center py-20 text-center px-8">
+                 <div className={`w-20 h-20 bg-${themeColor}-50 rounded-full flex items-center justify-center mb-4`}>
+                    <Sparkles size={32} className={`text-${themeColor}-200`} />
+                 </div>
+                 <h3 className="text-xl font-black text-slate-800">No Spotlight Pets</h3>
+                 <p className="text-slate-400 text-xs mt-2 max-w-[260px]">
+                   There are no curated picks available yet. Check the Discover tab to see all nearby pets!
+                 </p>
+               </div>
+             )}
           </div>
         )}
       </div>
