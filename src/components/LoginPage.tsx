@@ -21,7 +21,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   
   // Real Auth Configuration State
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState(localStorage.getItem('google_client_id') || '');
+  // Check environment variable first, then localStorage
+  const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
+  const [googleClientId, setGoogleClientId] = useState(
+    envClientId || localStorage.getItem('google_client_id') || ''
+  );
   const [tempClientId, setTempClientId] = useState('');
   const [tokenClient, setTokenClient] = useState<any>(null);
   const [originError, setOriginError] = useState<string | null>(null);
@@ -131,6 +135,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   const handleGoogleClick = () => {
+      // Always use real Google OAuth if client is ready
       if (tokenClient) {
           setIsLoading(true);
           try {
@@ -140,9 +145,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               alert("Google Auth Client not ready. Please wait a moment or check configuration.");
           }
       } else {
+          // If no client but Client ID exists, show alert
           if (googleClientId) {
              alert("Google Sign-In is configured but not fully loaded yet. Please wait a moment.");
           } else {
+             // No configuration - open config modal to prompt setup
+             alert("To use real Google Sign-In, please configure your Google Client ID in the settings (gear icon at top right).\n\nFor now, you can use the demo mode.");
              setView('google_sim');
           }
       }
@@ -279,13 +287,42 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   </div>
 
                   <div className="space-y-4">
+                      {envClientId && (
+                        <div className="bg-green-50 p-3 rounded-xl border border-green-200">
+                          <p className="text-[10px] text-green-700 font-bold">Google Client ID is configured via environment variable (.env file)</p>
+                          <p className="text-[9px] text-green-600 mt-1">This will work across all devices.</p>
+                        </div>
+                      )}
+
+                      <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-200">
+                          <div className="flex items-start gap-2">
+                            <Key size={14} className="text-slate-500 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-[10px] text-slate-700 font-bold">Setup Google OAuth (2 Options)</p>
+                                <p className="text-[9px] text-slate-600 mt-1 font-bold">Option 1: Environment Variable (Recommended)</p>
+                                <ol className="text-[9px] text-slate-600 mt-0.5 space-y-0.5 list-decimal list-inside ml-2">
+                                    <li>Add VITE_GOOGLE_CLIENT_ID to your .env file</li>
+                                    <li>Works across all devices automatically</li>
+                                </ol>
+                                <p className="text-[9px] text-slate-600 mt-2 font-bold">Option 2: Manual Configuration (This Device Only)</p>
+                                <ol className="text-[9px] text-slate-600 mt-0.5 space-y-0.5 list-decimal list-inside ml-2">
+                                    <li>Get Client ID from Google Cloud Console</li>
+                                    <li>Paste below and save</li>
+                                    <li>Stored in browser localStorage</li>
+                                </ol>
+                            </div>
+                          </div>
+                      </div>
+
                       <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Google Client ID</label>
-                          <input 
-                            type="text" 
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">
+                            Google Client ID {envClientId ? '(Override)' : ''}
+                          </label>
+                          <input
+                            type="text"
                             value={tempClientId}
                             onChange={(e) => { setTempClientId(e.target.value); setOriginError(null); }}
-                            placeholder="7123...apps.googleusercontent.com"
+                            placeholder={envClientId || "123456789-abc.apps.googleusercontent.com"}
                             className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-mono text-slate-800 outline-none focus:ring-2 focus:ring-orange-500/20"
                           />
                           {originError && <p className="text-[10px] text-red-500 font-bold ml-1">{originError}</p>}
