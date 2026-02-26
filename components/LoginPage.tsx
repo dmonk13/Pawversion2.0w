@@ -24,7 +24,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   
   // Real Auth Configuration State
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState(localStorage.getItem('google_client_id') || '');
+  const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
+  const [googleClientId, setGoogleClientId] = useState(envClientId || localStorage.getItem('google_client_id') || '');
   const [tempClientId, setTempClientId] = useState('');
   const [tokenClient, setTokenClient] = useState<any>(null);
   const [originError, setOriginError] = useState<string | null>(null);
@@ -144,6 +145,35 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       setIsConfigOpen(false);
       // Removed window.location.reload() to prevent 404s in some environments
       // The useEffect [googleClientId] will handle re-initialization
+  };
+
+  const handleRegister = async () => {
+    if (!email || !password) return;
+
+    setIsLoading(true);
+    try {
+      const username = email.split('@')[0];
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        onLogin('user', data.user.username, data.user.email);
+      } else {
+        alert(data.error || 'Registration failed');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Unable to connect to server. Please check your connection.');
+      setIsLoading(false);
+    }
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -537,7 +567,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </button>
 
                 <div className="text-center pt-2">
-                  <p className="text-xs text-slate-400">Don't have an account? <button type="button" onClick={() => handleFinalLogin('user', email.split('@')[0] || 'New User', email)} className="text-orange-500 font-bold">Create one</button></p>
+                  <p className="text-xs text-slate-400">Don't have an account? <button type="button" onClick={() => { if (email && password) { handleRegister(); } else { alert('Please enter email and password first'); } }} className="text-orange-500 font-bold">Create one</button></p>
                 </div>
               </div>
             </form>
