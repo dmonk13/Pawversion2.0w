@@ -56,13 +56,12 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
       Keep responses concise, warm, and professional. Always use the pet names when relevant. 
       If a medical emergency is implied, urgently advise visiting a real vet.`;
 
-      // Use gemini-2.0-flash-exp for fastest response
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-3-flash-preview',
         contents: historyForApi,
-        config: {
+        config: { 
           systemInstruction,
-          temperature: 0.7
+          temperature: 0.7 
         }
       });
 

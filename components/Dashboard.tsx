@@ -406,9 +406,8 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const base64Data = image.split(',')[1];
-            // Use gemini-2.0-flash-exp for fastest response
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash-exp',
+                model: 'gemini-3-flash-preview',
                 contents: [{
                     parts: [
                         { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
