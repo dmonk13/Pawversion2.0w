@@ -143,6 +143,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           if (googleClientId) {
              alert("Google Sign-In is configured but not fully loaded yet. Please wait a moment.");
           } else {
+             alert("Google OAuth is not configured.\n\nTo use real Google Sign-In:\n1. Click the Settings icon (⚙️) in the top-right\n2. Get your Google Client ID from Google Cloud Console\n3. Add it to the configuration\n\nFor now, showing demo simulation mode.");
              setView('google_sim');
           }
       }
@@ -279,13 +280,28 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   </div>
 
                   <div className="space-y-4">
+                      <div className="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-200">
+                          <div className="flex items-start gap-2">
+                            <Key size={14} className="text-slate-500 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-[10px] text-slate-700 font-bold">Get Your Google OAuth Credentials</p>
+                                <ol className="text-[9px] text-slate-600 mt-1 space-y-0.5 list-decimal list-inside">
+                                    <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a></li>
+                                    <li>Create OAuth 2.0 Client ID (Web application)</li>
+                                    <li>Add your origin to "Authorized JavaScript origins"</li>
+                                    <li>Copy the Client ID and paste below</li>
+                                </ol>
+                            </div>
+                          </div>
+                      </div>
+
                       <div className="space-y-2">
                           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Google Client ID</label>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             value={tempClientId}
                             onChange={(e) => { setTempClientId(e.target.value); setOriginError(null); }}
-                            placeholder="7123...apps.googleusercontent.com"
+                            placeholder="123456789-abc.apps.googleusercontent.com"
                             className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-mono text-slate-800 outline-none focus:ring-2 focus:ring-orange-500/20"
                           />
                           {originError && <p className="text-[10px] text-red-500 font-bold ml-1">{originError}</p>}
@@ -295,28 +311,31 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                           <div className="flex items-start gap-2">
                             <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
                             <div>
-                                <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wide">Error 400 Fix</p>
+                                <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wide">Setup Instructions</p>
                                 <p className="text-[10px] text-blue-700/80 leading-relaxed mt-1">
-                                    You must copy the <strong>Detected Origin</strong> below and add it to "Authorized JavaScript origins" in Google Cloud Console.
+                                    Add the <strong>Detected Origin</strong> below to "Authorized JavaScript origins" in your Google Cloud Console OAuth credentials.
                                 </p>
                             </div>
                           </div>
                           <div className="space-y-1">
-                             <label className="text-[9px] font-black uppercase text-blue-400 tracking-widest ml-1">Detected Origin</label>
+                             <label className="text-[9px] font-black uppercase text-blue-400 tracking-widest ml-1">Your Origin (Add this to Google Console)</label>
                              <div className="flex gap-2">
-                                <div className="flex-1 p-2 bg-white rounded-lg border border-blue-100 font-mono text-[10px] text-slate-600 truncate">
+                                <div className="flex-1 p-2 bg-white rounded-lg border border-blue-100 font-mono text-[10px] text-slate-600 break-all">
                                     {window.location.origin}
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => {
                                         navigator.clipboard.writeText(window.location.origin);
-                                        alert("Origin copied!");
+                                        alert("Origin copied to clipboard!");
                                     }}
-                                    className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
+                                    className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 flex-shrink-0"
                                 >
                                     <Copy size={14} />
                                 </button>
                              </div>
+                          </div>
+                          <div className="text-[9px] text-blue-600 bg-white/50 p-2 rounded-lg">
+                            <strong>Quick Link:</strong> <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Open Google Cloud Console</a>
                           </div>
                       </div>
 
