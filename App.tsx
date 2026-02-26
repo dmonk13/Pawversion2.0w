@@ -335,12 +335,58 @@ const App: React.FC = () => {
       setTasks(savedTasks ? JSON.parse(savedTasks) : INITIAL_TASKS);
       setUserPlan('Pro');
       setUserProfile({ name: 'Demo User', identifier: 'demo@pawpal.com', type: 'demo' });
+
+      // Add sample matches for demo user
+      setMatches([
+        {
+          id: 'ai_expert',
+          name: 'Dr. Paw',
+          image: '',
+          type: 'ai',
+          lastMessage: 'How can I help you today?',
+          lastMessageTime: 'Now',
+          unread: true
+        },
+        {
+          id: 'm1',
+          name: 'Cooper',
+          image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80',
+          type: 'pet',
+          breed: 'Golden Retriever',
+          lastMessage: 'Woof! When are we playing? 🦴',
+          lastMessageTime: '10m',
+          unread: true
+        },
+        {
+          id: 'm2',
+          name: 'Bella',
+          image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=200&q=80',
+          type: 'pet',
+          breed: 'French Bulldog',
+          lastMessage: 'See you at the park tomorrow!',
+          lastMessageTime: '1h',
+          unread: false
+        }
+      ]);
     } else {
       setPets(savedPets ? JSON.parse(savedPets) : []);
       setLogs(savedLogs ? JSON.parse(savedLogs) : []);
       setTasks(savedTasks ? JSON.parse(savedTasks) : []);
       setUserPlan('Free');
       setUserProfile({ name: username, identifier: identifier || 'No contact info', type: 'user' });
+
+      // Only AI assistant for regular users
+      setMatches([
+        {
+          id: 'ai_expert',
+          name: 'Dr. Paw',
+          image: '',
+          type: 'ai',
+          lastMessage: 'How can I help you today?',
+          lastMessageTime: 'Now',
+          unread: true
+        }
+      ]);
     }
     
     setIsAuthenticated(true);
@@ -501,7 +547,7 @@ const App: React.FC = () => {
           />
         );
       case 'community':
-        return <Community onMatch={handleNewMatch} />;
+        return <Community onMatch={handleNewMatch} userType={userProfile?.type} />;
       case 'matches':
         return (
             <Matches 

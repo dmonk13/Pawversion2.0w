@@ -22,6 +22,79 @@ import {
 } from 'lucide-react';
 import { DiscoverPet } from '../types';
 
+const DEMO_SAMPLE_DATA: DiscoverPet[] = [
+  {
+    id: 'd1',
+    name: 'Cooper',
+    breed: 'Golden Retriever',
+    age: '2 yrs',
+    energy: 'High',
+    distance: '1.2 km',
+    image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=500&q=80',
+    bio: 'Super friendly and loves to play fetch till the sun goes down!',
+    tags: ['Active', 'Kid-friendly'],
+    gender: 'Male',
+    status: 'Intact',
+    medicalHistory: ['Fully Vaccinated', 'No Allergies']
+  },
+  {
+    id: 'd2',
+    name: 'Bella',
+    breed: 'French Bulldog',
+    age: '1 yr',
+    energy: 'Low',
+    distance: '0.8 km',
+    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=500&q=80',
+    bio: 'Professional napper looking for a quiet walk in the park.',
+    tags: ['Calm', 'City-dweller'],
+    gender: 'Female',
+    status: 'Neutered',
+    medicalHistory: ['Vaccinated', 'Sensitive Stomach']
+  },
+  {
+    id: 'd3',
+    name: 'Rocky',
+    breed: 'Siberian Husky',
+    age: '3 yrs',
+    energy: 'High',
+    distance: '3.5 km',
+    image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=500&q=80',
+    bio: 'Adventurous spirit. I love hiking and cold weather!',
+    tags: ['Athletic', 'Talkative'],
+    gender: 'Male',
+    status: 'Intact',
+    medicalHistory: ['Fully Vaccinated']
+  },
+  {
+    id: 'd4',
+    name: 'Mochi',
+    breed: 'Corgi',
+    age: '4 yrs',
+    energy: 'Medium',
+    distance: '2.1 km',
+    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=500&q=80',
+    bio: 'I may have short legs, but I have a big heart and lots of speed!',
+    tags: ['Playful', 'Smart'],
+    gender: 'Female',
+    status: 'Intact',
+    medicalHistory: ['Vaccinated', 'Hip Dysplasia Monitored']
+  },
+  {
+    id: 'd5',
+    name: 'Daisy',
+    breed: 'Labradoodle',
+    age: '2 yrs',
+    energy: 'Medium',
+    distance: '0.5 km',
+    image: 'https://images.unsplash.com/photo-1591768793355-74d7af236c17?auto=format&fit=crop&w=500&q=80',
+    bio: 'Hypoallergenic and highly sociable. Let\'s grab a puppuccino!',
+    tags: ['Social', 'Non-shedding'],
+    gender: 'Female',
+    status: 'Neutered',
+    medicalHistory: ['Fully Vaccinated', 'Nut Allergy']
+  }
+];
+
 interface PetCardProps {
   pet: DiscoverPet;
   mode: 'Play' | 'Mate';
@@ -211,9 +284,10 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({ pet, woofsLeft, onWoof, o
 
 interface CommunityProps {
   onMatch?: (pet: DiscoverPet) => void;
+  userType?: 'demo' | 'user';
 }
 
-const Community: React.FC<CommunityProps> = ({ onMatch }) => {
+const Community: React.FC<CommunityProps> = ({ onMatch, userType = 'user' }) => {
   const [mode, setMode] = useState<'Play' | 'Mate'>('Play');
   const [activeView, setActiveView] = useState<'Discover' | 'Spotlight'>('Discover');
   const [filter, setFilter] = useState('All');
@@ -272,6 +346,19 @@ const Community: React.FC<CommunityProps> = ({ onMatch }) => {
   const fetchCommunityPets = async () => {
     setIsLoading(true);
     try {
+      // Use demo data for demo accounts
+      if (userType === 'demo') {
+        // Filter demo data based on mode
+        let filteredDemoData = DEMO_SAMPLE_DATA;
+        if (mode === 'Mate') {
+          filteredDemoData = DEMO_SAMPLE_DATA.filter(p => p.status === 'Intact');
+        }
+        setCommunityPets(filteredDemoData);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch from database for regular users
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
