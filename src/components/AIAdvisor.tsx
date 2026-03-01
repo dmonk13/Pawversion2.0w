@@ -9,8 +9,16 @@ interface Props {
 }
 
 const AIAdvisor: React.FC<Props> = ({ pets }) => {
+  const getInitialMessage = () => {
+    if (pets.length === 0) {
+      return "Woof! I'm your PawPal AI Expert. Add your pets to get personalized care advice!";
+    }
+    const petNames = pets.map(p => p.name).join(' and ');
+    return `Woof! I'm your PawPal AI Expert. I have all the records for ${petNames} ready. How can I assist you with their care today?`;
+  };
+
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', content: "Woof! I'm your PawPal AI Expert. I have all the records for your pets ready. How can I assist you with their care today?" }
+    { role: 'model', content: getInitialMessage() }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +35,10 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    setMessages([{ role: 'model', content: getInitialMessage() }]);
+  }, [pets.length, pets.map(p => p.id).join(',')]);
 
   const handleSend = async (customPrompt?: string) => {
     const textToSend = customPrompt || input;
@@ -51,9 +63,14 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
           parts: [{ text: m.content }]
         }));
 
-      const systemInstruction = `You are PawPal AI, a veteran veterinarian and pet behavioral expert. 
+      const systemInstruction = pets.length > 0
+        ? `You are PawPal AI, a veteran veterinarian and pet behavioral expert.
       You have access to the user's pets: ${pets.map(p => `${p.name} (${p.breed}, ${p.age}yrs)`).join(', ')}.
-      Keep responses concise, warm, and professional. Always use the pet names when relevant. 
+      Keep responses concise, warm, and professional. Always use the pet names when relevant.
+      If a medical emergency is implied, urgently advise visiting a real vet.`
+        : `You are PawPal AI, a veteran veterinarian and pet behavioral expert.
+      The user hasn't added any pets yet. Encourage them to add their pets to get personalized advice.
+      Provide general pet care tips and information. Keep responses concise, warm, and professional.
       If a medical emergency is implied, urgently advise visiting a real vet.`;
 
       const response = await ai.models.generateContent({
