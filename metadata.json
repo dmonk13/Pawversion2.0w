@@ -1,0 +1,23 @@
+{
+  "name": "PAWPAL ACTUAL",
+  "description": "A comprehensive mobile-first pet management companion for health tracking, scheduling, and AI-powered pet care advice.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "mobilePermissions": {
+    "ios": {
+      "NSCameraUsageDescription": "PawPal needs camera access to scan pet food nutrition labels and take profile photos.",
+      "NSLocationWhenInUseUsageDescription": "PawPal uses your location to find nearby playdates and veterinary clinics.",
+      "NSMicrophoneUsageDescription": "PawPal uses the microphone for voice-activated AI pet advice."
+    },
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ]
+    }
+  }
+}
