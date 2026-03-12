@@ -1,36 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Pet, HealthLog, Task } from '../types';
-import { 
-  Clock, 
-  Heart, 
-  ArrowRight, 
-  Zap, 
-  Search, 
-  MapPin, 
-  SlidersHorizontal, 
-  Star,
-  PlusCircle,
-  Repeat,
-  CheckCircle,
-  Circle,
-  X,
-  Calendar,
-  Utensils,
-  Activity,
-  Scissors,
-  Check,
-  Lightbulb,
-  Users,
-  CalendarPlus,
-  Camera,
-  ScanLine,
-  Loader2,
-  Sparkles,
-  MoreVertical,
-  Edit2,
-  Share2,
-  Trash2
-} from 'lucide-react';
+import { Clock, Heart, ArrowRight, Zap, Search, MapPin, SlidersHorizontal, Star, CirclePlus as PlusCircle, Repeat, CircleCheck as CheckCircle, Circle, X, Calendar, Utensils, Activity, Scissors, Check, Lightbulb, Users, CalendarPlus, Camera, ScanLine, Loader as Loader2, Sparkles, MoveVertical as MoreVertical, CreditCard as Edit2, Share2, Trash2 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 interface Props {
