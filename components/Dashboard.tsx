@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Pet, HealthLog, Task } from '../types';
 import { Clock, Heart, ArrowRight, Zap, Search, MapPin, SlidersHorizontal, Star, CirclePlus as PlusCircle, Repeat, CircleCheck as CheckCircle, Circle, X, Calendar, Utensils, Activity, Scissors, Check, Lightbulb, Users, CalendarPlus, Camera, ScanLine, Loader as Loader2, Sparkles, MoveVertical as MoreVertical, CreditCard as Edit2, Share2, Trash2 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 
 interface Props {
   pets: Pet[];
@@ -375,8 +374,8 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         setLoading(true);
         try {
             const base64Data = image.split(',')[1];
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            const supabaseUrl = 'https://kumgzpriaxjzizolrlwf.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1bWd6cHJpYXhqeml6b2xybHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMTMxODgsImV4cCI6MjA4ODg4OTE4OH0.aln5L7K9gDvudZcfTT03qAy7LYcr_na6hNRY3A__57c';
             const response = await fetch(`${supabaseUrl}/functions/v1/gemini-proxy`, {
                 method: 'POST',
                 headers: {

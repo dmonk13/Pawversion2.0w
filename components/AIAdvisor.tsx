@@ -68,8 +68,8 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
       Provide general pet care tips and information. Keep responses concise, warm, and professional.
       If a medical emergency is implied, urgently advise visiting a real vet.`;
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = 'https://kumgzpriaxjzizolrlwf.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1bWd6cHJpYXhqeml6b2xybHdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMTMxODgsImV4cCI6MjA4ODg4OTE4OH0.aln5L7K9gDvudZcfTT03qAy7LYcr_na6hNRY3A__57c';
       const response = await fetch(`${supabaseUrl}/functions/v1/gemini-proxy`, {
         method: 'POST',
         headers: {
