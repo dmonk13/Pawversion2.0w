@@ -74,11 +74,11 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
       If a medical emergency is implied, urgently advise visiting a real vet.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: historyForApi,
-        config: { 
+        config: {
           systemInstruction,
-          temperature: 0.7 
+          temperature: 0.7
         }
       });
 
