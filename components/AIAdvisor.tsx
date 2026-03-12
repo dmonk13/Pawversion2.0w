@@ -6,8 +6,6 @@ interface Props {
   pets: Pet[];
 }
 
-// Replace this with your actual Render URL after deployment
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
 
 const getInitialMessage = (pets: Pet[]) => {
   if (pets.length === 0) {
@@ -56,25 +54,41 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     setIsLoading(true);
 
     try {
-      // Call the backend API instead of Google SDK directly
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const historyForApi = [...messages, { role: 'user', content: textToSend }]
+        .filter((_, index) => index > 0)
+        .map(m => ({ role: m.role, parts: [{ text: m.content }] }));
+
+      const systemInstruction = pets.length > 0
+        ? `You are PawPal AI, a veteran veterinarian and pet behavioral expert.
+      You have access to the user's pets: ${pets.map(p => `${p.name} (${p.breed}, ${p.age}yrs)`).join(', ')}.
+      Keep responses concise, warm, and professional. Always use the pet names when relevant.
+      If a medical emergency is implied, urgently advise visiting a real vet.`
+        : `You are PawPal AI, a veteran veterinarian and pet behavioral expert.
+      The user hasn't added any pets yet. Encourage them to add their pets to get personalized advice.
+      Provide general pet care tips and information. Keep responses concise, warm, and professional.
+      If a medical emergency is implied, urgently advise visiting a real vet.`;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const response = await fetch(`${supabaseUrl}/functions/v1/gemini-proxy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: textToSend }],
-          pets: pets
+          model: 'gemini-1.5-flash',
+          contents: historyForApi,
+          config: { systemInstruction, temperature: 0.7 },
         }),
       });
 
-      if (!response.ok) throw new Error('Backend request failed');
-
       const data = await response.json();
+      if (data.error) throw new Error(data.error);
       setMessages(prev => [...prev, { role: 'model', content: data.text || "I'm processing that. One moment!" }]);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: "My connection to the PawPal servers is a bit fuzzy. Let's try again!" }]);
+      setMessages(prev => [...prev, { role: 'model', content: "I'm having trouble connecting to the service. Please try again." }]);
     } finally {
       setIsLoading(false);
     }

@@ -404,21 +404,31 @@ const BreedScannerModal = ({ onClose }: { onClose: () => void }) => {
         if (!image) return;
         setLoading(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const base64Data = image.split(',')[1];
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: [{
-                    parts: [
-                        { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
-                        { text: "Identify the dog breed in this image. Provide ONLY the breed name on the first line with double asterisks (e.g., **English Cocker Spaniel**), then write 'Here are three typical personality traits:' followed by exactly 3 bullet points about their personality traits. Each bullet point should start with '* **Trait Name:**' followed by the description. Keep each description concise (one sentence). If it's not a dog, strictly say 'This doesn't look like a dog'." }
-                    ]
-                }],
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            const response = await fetch(`${supabaseUrl}/functions/v1/gemini-proxy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({
+                    model: 'gemini-1.5-flash',
+                    contents: [{
+                        parts: [
+                            { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
+                            { text: "Identify the dog breed in this image. Provide ONLY the breed name on the first line with double asterisks (e.g., **English Cocker Spaniel**), then write 'Here are three typical personality traits:' followed by exactly 3 bullet points about their personality traits. Each bullet point should start with '* **Trait Name:**' followed by the description. Keep each description concise (one sentence). If it's not a dog, strictly say 'This doesn't look like a dog'." }
+                        ]
+                    }],
+                }),
             });
-            setResult(response.text || "I couldn't identify the breed. Try a clearer photo!");
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            setResult(data.text || "I couldn't identify the breed. Try a clearer photo!");
         } catch (e) {
             console.error("AI Scan Error:", e);
-            setResult("Failed to analyze image. Please ensure your API key is valid and try again.");
+            setResult("Failed to analyze image. Please try again.");
         } finally {
             setLoading(false);
         }

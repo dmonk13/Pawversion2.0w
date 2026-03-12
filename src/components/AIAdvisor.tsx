@@ -1,8 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Pet, ChatMessage } from '../types';
-import { Send, Sparkles, User, Brain, Heart, Info, Camera, Bot } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
+import { Send, User, Brain, Heart, Info, Camera, Bot } from 'lucide-react';
 
 interface Props {
   pets: Pet[];
@@ -45,19 +44,13 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     if (!textToSend.trim() || isLoading) return;
 
     setInput('');
-    // Optimistically add user message
     const newMessages = [...messages, { role: 'user', content: textToSend } as ChatMessage];
     setMessages(newMessages);
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-      
-      // Filter history to ensure it complies with API requirements (starts with user)
-      // We skip the very first welcome message from the model context if it's purely UI
-      // We map the messages state to the format required by the API.
       const historyForApi = newMessages
-        .filter((_, index) => index > 0) // Skip initial welcome message
+        .filter((_, index) => index > 0)
         .map(m => ({
           role: m.role,
           parts: [{ text: m.content }]
@@ -73,16 +66,24 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
       Provide general pet care tips and information. Keep responses concise, warm, and professional.
       If a medical emergency is implied, urgently advise visiting a real vet.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: historyForApi,
-        config: {
-          systemInstruction,
-          temperature: 0.7
-        }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const response = await fetch(`${supabaseUrl}/functions/v1/gemini-proxy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gemini-1.5-flash',
+          contents: historyForApi,
+          config: { systemInstruction, temperature: 0.7 },
+        }),
       });
 
-      const responseText = response.text || "I'm having trouble thinking right now. Please try again.";
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      const responseText = data.text || "I'm having trouble thinking right now. Please try again.";
       setMessages(prev => [...prev, { role: 'model', content: responseText }]);
 
     } catch (error) {
@@ -95,11 +96,10 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 animate-in fade-in duration-500">
-      {/* Topics Header */}
       <div className="p-4 bg-white border-b border-slate-100 shrink-0">
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
           {suggestedTopics.map((topic, idx) => (
-            <button 
+            <button
               key={idx}
               onClick={() => handleSend(topic.prompt)}
               className="flex-shrink-0 flex items-center gap-2 bg-slate-50 border border-slate-100 px-4 py-2 rounded-2xl text-[11px] font-black text-slate-700 uppercase tracking-tight active:scale-95 transition-all hover:bg-slate-100"
@@ -111,7 +111,6 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
         </div>
       </div>
 
-      {/* Chat Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -141,7 +140,6 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
         )}
       </div>
 
-      {/* Input Area */}
       <div className="p-3 bg-white border-t border-slate-100 shrink-0 pb-safe">
         <div className="flex gap-2 items-center bg-slate-100 rounded-[2rem] p-1.5 pl-4 border border-slate-100 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all">
           <button className="text-slate-400 hover:text-orange-500 transition-colors">
@@ -155,7 +153,7 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
             placeholder="Ask Dr. Paw..."
             className="flex-1 bg-transparent border-none py-2 text-sm font-medium outline-none placeholder:text-slate-400 text-slate-800"
           />
-          <button 
+          <button
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
             className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-md disabled:opacity-50 disabled:bg-slate-300 transition-all active:scale-90 hover:bg-orange-600"
