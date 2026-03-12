@@ -77,7 +77,7 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
           'Authorization': `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash',
           contents: historyForApi,
           config: { systemInstruction, temperature: 0.7 },
         }),
