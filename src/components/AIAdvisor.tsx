@@ -51,7 +51,7 @@ const AIAdvisor: React.FC<Props> = ({ pets }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       
       // Filter history to ensure it complies with API requirements (starts with user)
       // We skip the very first welcome message from the model context if it's purely UI
